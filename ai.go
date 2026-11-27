@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,9 +26,18 @@ type chatMessage struct {
 }
 
 type chatRequest struct {
-	Model     string        `json:"model"`
-	Messages  []chatMessage `json:"messages"`
-	MaxTokens int           `json:"max_tokens,omitempty"`
+	Model    string        `json:"model"`
+	Messages []chatMessage `json:"messages"`
+}
+
+// sessionID identifies this run to servers that route by session, such as
+// OpenCode Go, which rejects requests without x-opencode-session.
+var sessionID = newSessionID()
+
+func newSessionID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return "komit-" + hex.EncodeToString(b)
 }
 
 type chatResponse struct {
@@ -88,6 +99,8 @@ func apiRequest(cfg config, method, path string, payload any, timeout time.Durat
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	req.Header.Set("User-Agent", "komit")
+	req.Header.Set("x-opencode-session", sessionID)
 	if cfg.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	}

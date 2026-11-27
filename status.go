@@ -29,9 +29,8 @@ func runStatus(args []string) int {
 
 	start := time.Now()
 	_, err := chatCompletion(cfg, chatRequest{
-		Model:     cfg.Model,
-		Messages:  []chatMessage{{Role: "user", Content: "Reply with OK"}},
-		MaxTokens: 5,
+		Model:    cfg.Model,
+		Messages: []chatMessage{{Role: "user", Content: "Reply with OK"}},
 	}, requestTimeout)
 	if err != nil {
 		printCheck("✗", "Generation failed", err.Error())
