@@ -2,7 +2,7 @@
 
 ## Setup
 
-Requires Go 1.27.3 or later (see `go.mod`).
+Requires macOS 15 (Sequoia) or later on Apple Silicon (`arm64`) and Go 1.27.3 or later (see `go.mod`).
 
 ```sh
 git clone https://github.com/ernilambar/komit.git

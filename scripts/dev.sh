@@ -4,6 +4,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
+	echo "komit requires macOS 15 or later on Apple Silicon" >&2
+	exit 1
+fi
+
 # Load KOMIT_* settings from .env (gitignored) if present.
 if [[ -f .env ]]; then
 	set -a
@@ -13,7 +18,7 @@ if [[ -f .env ]]; then
 fi
 
 version="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
-ldflags="-X main.version=${version}"
+ldflags="-X main.version=${version} -macos 15.0"
 
 usage() {
 	cat <<EOF

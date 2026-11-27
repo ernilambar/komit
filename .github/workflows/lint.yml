@@ -53,12 +53,10 @@ jobs:
           version: latest
 
   test:
-    name: test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest]
+    name: test (macOS 15, arm64)
+    runs-on: macos-15
+    env:
+      GOARCH: arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -71,7 +69,7 @@ jobs:
         run: go test -race -cover ./...
 
       - name: Build binary (smoke test)
-        run: go build -trimpath -ldflags="-s -w" -o komit .
+        run: go build -trimpath -ldflags="-s -w -macos 15.0" -o komit .
 
       - name: Verify binary runs
         run: ./komit --version

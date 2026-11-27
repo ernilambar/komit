@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 
 	"charm.land/huh/v2"
 	"github.com/spf13/pflag"
@@ -27,6 +28,11 @@ func main() {
 }
 
 func run() int {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		fmt.Fprintln(os.Stderr, "komit requires macOS 15 or later on Apple Silicon")
+		return 1
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "status" {
 		return runStatus(os.Args[2:])
 	}

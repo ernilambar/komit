@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   build:
+    # komit targets macOS 15+ on Apple Silicon.
     runs-on: ubuntu-latest
     strategy:
       matrix:

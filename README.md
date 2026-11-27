@@ -4,7 +4,15 @@ Generate a commit subject from your staged changes with an OpenAI-compatible mod
 
 Subjects follow one style: plain imperative mood, single line, at most 72 characters, no trailing period, no Conventional Commit prefix, no body.
 
+## Requirements
+
+- macOS 15 (Sequoia) or later on Apple Silicon (`arm64`).
+- [git](https://git-scm.com) on `PATH`.
+- An OpenAI-compatible chat-completions endpoint.
+
 ## Install
+
+Prebuilt macOS 15+ (Apple Silicon) binaries are attached to each release. Or install from source with Go 1.27.3 or later:
 
 ```sh
 go install github.com/ernilambar/komit@latest
@@ -93,7 +101,7 @@ Server and model problems are warnings. It exits 1 if a required variable is mis
 | Code | Meaning |
 |---|---|
 | `0` | Success |
-| `1` | Error: invalid flags, missing config, nothing staged, server unreachable, commit or push failed |
+| `1` | Error: unsupported platform, invalid flags, missing config, nothing staged, server unreachable, commit or push failed |
 | `130` | Cancelled in the interactive prompt |
 
 If the push fails, the commit is kept.
