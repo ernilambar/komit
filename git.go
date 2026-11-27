@@ -47,9 +47,9 @@ func ensureRepo() error {
 	return nil
 }
 
-func stageTracked() error {
-	if _, err := gitOutput("add", "-u"); err != nil {
-		return fmt.Errorf("git add -u: %w", err)
+func stageAll() error {
+	if _, err := gitOutput("add", "-A"); err != nil {
+		return fmt.Errorf("git add -A: %w", err)
 	}
 	return nil
 }

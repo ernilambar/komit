@@ -34,7 +34,7 @@ func run() int {
 	var opts options
 	pflag.BoolVar(&opts.dryRun, "dry-run", false, "print subjects without committing")
 	pflag.BoolVar(&opts.noPush, "no-push", false, "commit without pushing")
-	pflag.BoolVarP(&opts.all, "all", "a", false, "stage modified and deleted tracked files")
+	pflag.BoolVarP(&opts.all, "all", "a", false, "stage all changes, including untracked files")
 	pflag.StringVar(&opts.model, "model", "", "model to use (overrides KOMIT_MODEL)")
 	pflag.BoolVarP(&opts.yes, "yes", "y", false, "commit the first suggestion without prompting")
 	pflag.IntVarP(&opts.count, "count", "n", 2, "number of subject candidates (1-5)")
@@ -78,7 +78,7 @@ func run() int {
 		return 1
 	}
 	if opts.all {
-		if err := stageTracked(); err != nil {
+		if err := stageAll(); err != nil {
 			fmt.Fprintln(os.Stderr, "komit:", err)
 			return 1
 		}

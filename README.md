@@ -43,7 +43,7 @@ The selection menu:
 
 | Flag | Description |
 |---|---|
-| `-a`, `--all` | Stage modified and deleted tracked files first (`git add -u`) |
+| `-a`, `--all` | Stage all changes first, including untracked files (`git add -A`) |
 | `-y`, `--yes` | Commit the first suggestion without prompting |
 | `-n`, `--count <n>` | Number of candidates, 1–5 (default 2). Cannot be combined with `-y` unless `-n 1` |
 | `--dry-run` | Print the candidates and exit without committing |
@@ -58,7 +58,7 @@ Short flags can be combined, e.g. `-ay`.
 
 ```sh
 komit                  # pick from 2 candidates, commit, push
-komit -a -n 4          # stage tracked changes, pick from 4 candidates
+komit -a -n 4          # stage all changes, pick from 4 candidates
 komit -ay              # stage, commit the first suggestion, push
 komit --dry-run        # preview candidates only
 komit -y --no-push     # commit without prompting, skip push
