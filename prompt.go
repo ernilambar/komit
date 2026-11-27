@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
+	"charm.land/huh/v2/spinner"
 )
 
 const (
@@ -24,25 +25,35 @@ func stdinIsTTY() bool {
 // chooseSubject runs the interactive selection loop and returns the subject to
 // commit. It returns huh.ErrUserAborted when the user cancels.
 func chooseSubject(cfg config, input string, n int) (string, error) {
-	subjects, err := suggestSubjects(cfg, input, n)
+	subjects, err := generateWithSpinner(cfg, input, n)
 	writeOwn := errors.Is(err, errNoSubjects)
 	if err != nil && !writeOwn {
 		return "", err
+	}
+	var notice string
+	if writeOwn {
+		notice = capitalize(errNoSubjects.Error())
 	}
 
 	for {
 		var prefill string
 		if !writeOwn {
-			pick, edit, err := selectSubject(subjects)
+			pick, edit, err := selectSubject(subjects, notice)
+			notice = ""
 			if err != nil {
 				return "", err
 			}
 			switch pick {
 			case pickRegenerate:
-				subjects, err = suggestSubjects(cfg, input, n)
-				writeOwn = errors.Is(err, errNoSubjects)
-				if err != nil && !writeOwn {
+				// A failed regenerate keeps the current list and says why.
+				fresh, err := generateWithSpinner(cfg, input, n)
+				switch {
+				case errors.Is(err, huh.ErrUserAborted):
 					return "", err
+				case err != nil:
+					notice = "Regenerate failed: " + err.Error()
+				default:
+					subjects = fresh
 				}
 				continue
 			case pickWriteOwn:
@@ -53,7 +64,8 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 		}
 		writeOwn = false
 
-		subject, err := inputSubject(prefill)
+		subject, err := inputSubject(prefill, notice)
+		notice = ""
 		if err != nil {
 			return "", err
 		}
@@ -63,9 +75,27 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 	}
 }
 
+// generateWithSpinner runs suggestSubjects behind a spinner. Ctrl+C returns
+// huh.ErrUserAborted.
+func generateWithSpinner(cfg config, input string, n int) ([]string, error) {
+	var subjects []string
+	err := spinner.New().
+		Title(" Generating subjects…").
+		ActionWithErr(func(context.Context) error {
+			var err error
+			subjects, err = suggestSubjects(cfg, input, n)
+			return err
+		}).
+		Run()
+	if errors.Is(err, tea.ErrInterrupted) {
+		return nil, huh.ErrUserAborted
+	}
+	return subjects, err
+}
+
 // selectSubject shows the subject list. Pressing e returns pickWriteOwn with the
 // highlighted suggestion (empty for the other rows) to edit; r regenerates.
-func selectSubject(subjects []string) (int, string, error) {
+func selectSubject(subjects []string, notice string) (int, string, error) {
 	options := make([]huh.Option[int], 0, len(subjects)+2)
 	for i, s := range subjects {
 		options = append(options, huh.NewOption(s, i))
@@ -79,7 +109,7 @@ func selectSubject(subjects []string) (int, string, error) {
 	var edit string
 	field := huh.NewSelect[int]().
 		Title("Commit subject").
-		Description("e edit · r regenerate").
+		Description(withNotice(notice, "e edit · r regenerate")).
 		Options(options...).
 		Value(&pick)
 	filter := func(_ tea.Model, msg tea.Msg) tea.Msg {
@@ -108,25 +138,35 @@ func selectSubject(subjects []string) (int, string, error) {
 
 // inputSubject prompts for a custom subject, starting from initial. An empty
 // result means the user wants to go back to the list.
-func inputSubject(initial string) (string, error) {
+func inputSubject(initial, notice string) (string, error) {
 	value := initial
-	field := huh.NewInput().Title("Commit subject").Value(&value).Validate(func(s string) error {
-		if strings.TrimSpace(s) == "" {
-			return nil
-		}
-		if _, ok := cleanLine(s); !ok {
-			return fmt.Errorf("subject must be 1-%d characters after cleanup", maxSubjectLen)
-		}
-		return nil
-	})
+	field := huh.NewInput().
+		Title("Commit subject").
+		Description(withNotice(notice, "Submit empty to go back")).
+		Value(&value).
+		Validate(func(s string) error {
+			if strings.TrimSpace(s) == "" {
+				return nil
+			}
+			_, err := cleanInput(s)
+			return err
+		})
 	if err := runField(field); err != nil {
 		return "", err
 	}
 	if strings.TrimSpace(value) == "" {
 		return "", nil
 	}
-	subject, _ := cleanLine(value)
+	subject, _ := cleanInput(value)
 	return subject, nil
+}
+
+// withNotice puts a one-off notice above the usual hint.
+func withNotice(notice, hint string) string {
+	if notice == "" {
+		return hint
+	}
+	return notice + "\n" + hint
 }
 
 func runField(field huh.Field, opts ...tea.ProgramOption) error {

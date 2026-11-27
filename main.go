@@ -58,6 +58,10 @@ func run() int {
 		return 0
 	}
 
+	if pflag.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "komit: unexpected argument %q\n", pflag.Arg(0))
+		return 1
+	}
 	if err := validateFlags(opts, pflag.CommandLine.Changed("count")); err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)
 		return 1

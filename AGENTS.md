@@ -47,8 +47,9 @@ static analysis.
   than creating a new package.
 - **Standard library first.** Do not add a dependency unless it clearly earns its place
   (see `CONTRIBUTING.md`). Keep `go.mod` tidy and minimal.
-- **Subject rules live only in `clean.go`.** All model output and user-typed subjects go
-  through `cleanSubjects`/`cleanLine`: plain imperative, one line, ≤72 characters, no
+- **Subject rules live only in `clean.go`.** Model output goes through
+  `cleanSubjects`/`cleanLine` (prefixes stripped); user-typed subjects go through
+  `cleanInput` (prefixes rejected): plain imperative, one line, ≤72 characters, no
   trailing period, no Conventional Commit prefix, no body. When changing these rules, add
   or update table cases in `clean_test.go`. Repo commit messages use the same style, e.g.
   `Add scripts`.

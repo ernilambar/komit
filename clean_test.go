@@ -72,6 +72,26 @@ func TestCleanSubjects(t *testing.T) {
 				"4. add validation\n",
 			want: []string{"Add validation", "Add error handling", "Nil pointer in parser"},
 		},
+		{
+			name: "drops preamble ending in a colon",
+			raw:  "Here are 2 commit subjects:\n\nAdd parser\nFix parser",
+			want: []string{"Add parser", "Fix parser"},
+		},
+		{
+			name: "strips markdown bold and headings",
+			raw:  "**Add parser**\n# Fix tests\n## \n#123 stays",
+			want: []string{"Add parser", "Fix tests", "#123 stays"},
+		},
+		{
+			name: "drops reasoning after an unclosed think tag",
+			raw:  "Add parser\n<think>\nI should add a parser",
+			want: []string{"Add parser"},
+		},
+		{
+			name: "drops reasoning before a stray closing think tag",
+			raw:  "I should add a parser\n</think>\nAdd parser",
+			want: []string{"Add parser"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +99,31 @@ func TestCleanSubjects(t *testing.T) {
 			got := cleanSubjects(tt.raw)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("cleanSubjects(%q) = %#v, want %#v", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCleanInput(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{name: "keeps a plain subject", in: "add parser.", want: "Add parser"},
+		{name: "rejects a conventional prefix", in: "Fix: crash on empty input", wantErr: true},
+		{name: "rejects a scoped prefix", in: "feat(cli): add flag", wantErr: true},
+		{name: "rejects a trailing colon", in: "Update docs:", wantErr: true},
+		{name: "rejects an overlong subject", in: strings.Repeat("a", maxSubjectLen+1), wantErr: true},
+		{name: "keeps a word that starts like a prefix", in: "Fixture cleanup", want: "Fixture cleanup"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := cleanInput(tt.in)
+			if (err != nil) != tt.wantErr || got != tt.want {
+				t.Fatalf("cleanInput(%q) = %q, %v; want %q, error %v", tt.in, got, err, tt.want, tt.wantErr)
 			}
 		})
 	}

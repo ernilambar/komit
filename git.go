@@ -15,7 +15,14 @@ const (
 	diffTruncatedMarker = "\n[diff truncated]\n"
 )
 
-var diffExcludePaths = []string{":!*.lock", ":!package-lock.json", ":!go.sum", ":!*.min.*"}
+// diffPathspecs cover the whole repo even when komit runs from a subdirectory.
+var diffPathspecs = []string{
+	":/",
+	":(top,exclude)*.lock",
+	":(top,exclude)package-lock.json",
+	":(top,exclude)go.sum",
+	":(top,exclude)*.min.*",
+}
 
 var (
 	errNotRepo       = errors.New("not a git repository")
@@ -85,7 +92,7 @@ func stagedStat() (string, error) {
 }
 
 func stagedDiff() (string, error) {
-	args := append([]string{"diff", "--cached", "--no-ext-diff", "--", "."}, diffExcludePaths...)
+	args := append([]string{"diff", "--cached", "--no-ext-diff", "--"}, diffPathspecs...)
 	out, err := gitOutput(args...)
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached: %w", err)
