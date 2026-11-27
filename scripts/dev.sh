@@ -4,7 +4,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
+# hw.optional.arm64 stays 1 on Apple Silicon under Rosetta, where uname -m
+# reports x86_64.
+if [[ "$(uname -s)" != "Darwin" || "$(sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" != "1" ]]; then
 	echo "komit requires macOS 15 or later on Apple Silicon" >&2
 	exit 1
 fi

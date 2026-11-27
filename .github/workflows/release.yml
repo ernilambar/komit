@@ -7,10 +7,16 @@ on:
 permissions:
   contents: write
 
+# A re-pushed tag must not leave two release runs racing to publish.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     # komit targets macOS 15+ on Apple Silicon.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         include:
@@ -31,8 +37,21 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
         run: |
-          mkdir -p dist
-          go build -trimpath -ldflags="-s -w -macos 15.0 -X main.version=${{ github.ref_name }}" -o dist/komit-${{ matrix.suffix }} .
+          mkdir -p build dist
+          go build -trimpath -ldflags="-s -w -macos 15.0 -X main.version=${{ github.ref_name }}" -o build/komit .
+
+      - name: Verify architecture
+        run: |
+          info="$(file build/komit)"
+          echo "$info"
+          if ! grep -q 'Mach-O 64-bit' <<<"$info" || ! grep -qw 'arm64' <<<"$info"; then
+            echo "::error::expected a Mach-O arm64 executable"
+            exit 1
+          fi
+
+      # A tarball keeps the executable bit, which a bare download loses.
+      - name: Package
+        run: tar -czf dist/komit-${{ github.ref_name }}-${{ matrix.suffix }}.tar.gz -C build komit
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -42,7 +61,10 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build
+    # Gate publishing on the "release" environment so a tag can require approval.
+    environment: release
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -68,7 +90,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: dist
-        run: sha256sum komit-* > SHA256SUMS
+        run: sha256sum komit-*.tar.gz > SHA256SUMS
 
       - name: Attach binaries to GitHub Release
         uses: softprops/action-gh-release@v2
