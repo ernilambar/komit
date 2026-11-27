@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"unicode/utf8"
@@ -116,6 +117,34 @@ func buildModelInput() (string, error) {
 	b.WriteString("\nStaged diff:\n")
 	b.WriteString(diff)
 	return b.String(), nil
+}
+
+// gitStream runs a git command with its output streamed to the terminal.
+func gitStream(args ...string) error {
+	cmd := exec.Command("git", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func commit(subject string) error {
+	if err := gitStream("commit", "-m", subject); err != nil {
+		return fmt.Errorf("git commit failed: %w", err)
+	}
+	return nil
+}
+
+// push pushes the current branch, setting origin as upstream when none exists.
+func push() error {
+	args := []string{"push"}
+	if _, err := gitOutput("rev-parse", "--abbrev-ref", "@{u}"); err != nil {
+		args = []string{"push", "-u", "origin", "HEAD"}
+	}
+	if err := gitStream(args...); err != nil {
+		return fmt.Errorf("git %s failed (commit kept): %w", strings.Join(args, " "), err)
+	}
+	return nil
 }
 
 // truncateUTF8 cuts s to at most max bytes without splitting a rune.

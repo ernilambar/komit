@@ -81,9 +81,21 @@ func run() int {
 		return 0
 	}
 
-	// Commit and push land in Phase 5.
-	fmt.Fprintln(os.Stderr, "komit: committing is not implemented yet; use --dry-run")
-	return 1
+	// Temporary: commit the first suggestion until -y (Phase 6) and the
+	// interactive prompt (Phase 7) land.
+	subject := subjects[0]
+	if err := commit(subject); err != nil {
+		fmt.Fprintln(os.Stderr, "komit:", err)
+		return 1
+	}
+	if opts.noPush {
+		return 0
+	}
+	if err := push(); err != nil {
+		fmt.Fprintln(os.Stderr, "komit:", err)
+		return 1
+	}
+	return 0
 }
 
 func validateFlags(opts options, countSet bool) error {
