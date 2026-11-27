@@ -24,10 +24,10 @@ jobs:
             goarch: arm64
             suffix: darwin-arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -54,7 +54,7 @@ jobs:
         run: tar -czf dist/komit-${{ github.ref_name }}-${{ matrix.suffix }}.tar.gz -C build komit
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: komit-${{ matrix.suffix }}
           path: dist/*
@@ -67,7 +67,7 @@ jobs:
     environment: release
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -83,7 +83,7 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -93,7 +93,7 @@ jobs:
         run: sha256sum komit-*.tar.gz > SHA256SUMS
 
       - name: Attach binaries to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           body: ${{ steps.diff.outputs.url }}
