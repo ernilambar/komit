@@ -50,8 +50,11 @@ jobs:
           fi
 
       # A tarball keeps the executable bit, which a bare download loses.
+      # The unversioned copy backs the stable releases/latest/download URL.
       - name: Package
-        run: tar -czf dist/komit-${{ github.ref_name }}-${{ matrix.suffix }}.tar.gz -C build komit
+        run: |
+          tar -czf dist/komit-${{ github.ref_name }}-${{ matrix.suffix }}.tar.gz -C build komit
+          cp dist/komit-${{ github.ref_name }}-${{ matrix.suffix }}.tar.gz dist/komit-${{ matrix.suffix }}.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

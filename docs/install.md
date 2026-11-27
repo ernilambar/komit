@@ -25,15 +25,15 @@ brew untap ernilambar/tap   # optional
 
 ## Prebuilt binary
 
-Each release ships a `komit-v<version>-darwin-arm64.tar.gz` archive on the [releases page](https://github.com/ernilambar/komit/releases). Download, extract, and move `komit` onto your `PATH`:
+Each release on the [releases page](https://github.com/ernilambar/komit/releases) ships a `komit-darwin-arm64.tar.gz` archive. Download the latest, extract, and move `komit` onto your `PATH`:
 
 ```sh
-curl -LO https://github.com/ernilambar/komit/releases/download/v0.1.0/komit-v0.1.0-darwin-arm64.tar.gz
-tar -xzf komit-v0.1.0-darwin-arm64.tar.gz
+curl -LO https://github.com/ernilambar/komit/releases/latest/download/komit-darwin-arm64.tar.gz
+tar -xzf komit-darwin-arm64.tar.gz
 sudo mv komit /usr/local/bin/
 ```
 
-Replace `v0.1.0` with the release you want.
+For a specific release, download `komit-v<version>-darwin-arm64.tar.gz` from that release instead.
 
 ## From source
 

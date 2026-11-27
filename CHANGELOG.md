@@ -1,8 +1,9 @@
 # Changelog
 
-## X.X.X - YYYY-MM-DD
+## 0.1.1 - 2026-11-27
 - Added: Press e to edit a suggestion and r to regenerate
 - Added: Show a spinner while generating subjects
+- Added: Unversioned release archive for a stable latest download URL
 - Fixed: Send the full staged diff when run from a subdirectory
 - Fixed: Reject unexpected arguments instead of committing
 - Fixed: Drop model preamble and stray text from suggestions
