@@ -52,6 +52,10 @@ func run() int {
 	if opts.model != "" {
 		cfg.Model = opts.model
 	}
+	if err := cfg.validate(); err != nil {
+		fmt.Fprintln(os.Stderr, "komit:", err)
+		return 1
+	}
 
 	if err := ensureRepo(); err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)

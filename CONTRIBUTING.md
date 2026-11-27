@@ -10,7 +10,7 @@ cd komit
 go build .
 ```
 
-To try changes against a model, run any OpenAI-compatible server and point `KOMIT_BASE_URL` at it. Check the connection with:
+To try changes against a model, run any OpenAI-compatible server and set `KOMIT_BASE_URL` and `KOMIT_MODEL` for it. Check the connection with:
 
 ```sh
 go run . status
@@ -37,7 +37,7 @@ Single `package main`, one file per concern:
 | File | Responsibility |
 |---|---|
 | `main.go` | Flag parsing, validation, top-level flow, exit codes |
-| `config.go` | `KOMIT_*` environment variables and defaults |
+| `config.go` | `KOMIT_*` environment variables and validation |
 | `git.go` | Staging, staged diff, commit, push |
 | `ai.go` | Chat-completions client and system prompt |
 | `clean.go` | Subject cleanup rules (tested in `clean_test.go`) |

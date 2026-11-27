@@ -1,13 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
-)
-
-const (
-	defaultBaseURL = "http://127.0.0.1:9090/v1"
-	defaultModel   = "gemma-4-e4b-it-4bit"
 )
 
 type config struct {
@@ -18,15 +14,23 @@ type config struct {
 
 func loadConfig() config {
 	return config{
-		BaseURL: strings.TrimRight(envOr("KOMIT_BASE_URL", defaultBaseURL), "/"),
-		Model:   envOr("KOMIT_MODEL", defaultModel),
+		BaseURL: strings.TrimRight(os.Getenv("KOMIT_BASE_URL"), "/"),
+		Model:   os.Getenv("KOMIT_MODEL"),
 		APIKey:  os.Getenv("KOMIT_API_KEY"),
 	}
 }
 
-func envOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+// validate reports all missing required settings in one error.
+func (c config) validate() error {
+	var missing []string
+	if c.BaseURL == "" {
+		missing = append(missing, "KOMIT_BASE_URL")
 	}
-	return fallback
+	if c.Model == "" {
+		missing = append(missing, "KOMIT_MODEL")
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s not set", strings.Join(missing, " and "))
 }

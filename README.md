@@ -14,11 +14,13 @@ go install github.com/ernilambar/komit@latest
 
 Set through environment variables:
 
-| Variable | Default | Description |
+| Variable | Required | Description |
 |---|---|---|
-| `KOMIT_BASE_URL` | `http://127.0.0.1:9090/v1` | OpenAI-compatible API base URL |
-| `KOMIT_MODEL` | `gemma-4-e4b-it-4bit` | Model name |
-| `KOMIT_API_KEY` | _(empty)_ | Sent as `Authorization: Bearer` when set |
+| `KOMIT_BASE_URL` | Yes | OpenAI-compatible API base URL, e.g. `http://127.0.0.1:11434/v1` |
+| `KOMIT_MODEL` | Yes, unless `--model` is passed | Model name |
+| `KOMIT_API_KEY` | No | Sent as `Authorization: Bearer` when set |
+
+komit exits with an error if a required variable is missing.
 
 ## Usage
 
@@ -77,7 +79,7 @@ API key    not set
 ✓ Generation works        810ms
 ```
 
-Server and model problems are warnings. It exits 1 only if the generation check fails.
+Server and model problems are warnings. It exits 1 if a required variable is missing or the generation check fails.
 
 ## What gets sent
 
@@ -89,7 +91,7 @@ Server and model problems are warnings. It exits 1 only if the generation check 
 | Code | Meaning |
 |---|---|
 | `0` | Success |
-| `1` | Error: invalid flags, nothing staged, server unreachable, commit or push failed |
+| `1` | Error: invalid flags, missing config, nothing staged, server unreachable, commit or push failed |
 | `130` | Cancelled in the interactive prompt |
 
 If the push fails, the commit is kept.

@@ -15,10 +15,15 @@ const modelsTimeout = 5 * time.Second
 func runStatus(args []string) int {
 	cfg := loadConfig()
 
-	fmt.Printf("Base URL   %s\n", cfg.BaseURL)
-	fmt.Printf("Model      %s\n", cfg.Model)
+	fmt.Printf("Base URL   %s\n", orNotSet(cfg.BaseURL))
+	fmt.Printf("Model      %s\n", orNotSet(cfg.Model))
 	fmt.Printf("API key    %s\n", describeKey(cfg.APIKey))
 	fmt.Println()
+
+	if err := cfg.validate(); err != nil {
+		printCheck("✗", "Config incomplete", err.Error())
+		return 1
+	}
 
 	checkModels(cfg)
 
@@ -80,6 +85,13 @@ func printCheck(mark, label, detail string) {
 
 func latency(start time.Time) string {
 	return fmt.Sprintf("%dms", time.Since(start).Milliseconds())
+}
+
+func orNotSet(v string) string {
+	if v == "" {
+		return "not set"
+	}
+	return v
 }
 
 // describeKey masks the API key, showing only its prefix and last 4 chars.
