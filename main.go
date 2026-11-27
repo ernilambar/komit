@@ -92,7 +92,7 @@ func run() int {
 	} else {
 		subject, err = chooseSubject(cfg, input, opts.count)
 		if errors.Is(err, huh.ErrUserAborted) {
-			return 0
+			return 130
 		}
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "komit:", err)
