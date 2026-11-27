@@ -24,8 +24,9 @@ type chatMessage struct {
 }
 
 type chatRequest struct {
-	Model    string        `json:"model"`
-	Messages []chatMessage `json:"messages"`
+	Model     string        `json:"model"`
+	Messages  []chatMessage `json:"messages"`
+	MaxTokens int           `json:"max_tokens,omitempty"`
 }
 
 type chatResponse struct {
@@ -49,39 +50,70 @@ Return exactly %d subjects, one per line, nothing else.`, maxSubjectLen, n)
 // generateSubjects asks the model for n commit subjects and returns its raw
 // reply for cleanup.
 func generateSubjects(cfg config, input string, n int) (string, error) {
-	body, err := json.Marshal(chatRequest{
+	return chatCompletion(cfg, chatRequest{
 		Model: cfg.Model,
 		Messages: []chatMessage{
 			{Role: "system", Content: systemPrompt(n)},
 			{Role: "user", Content: input},
 		},
-	})
-	if err != nil {
-		return "", err
+	}, requestTimeout)
+}
+
+// httpStatusError reports a non-2xx response.
+type httpStatusError struct {
+	Code int
+	Body string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("server returned %d: %s", e.Code, e.Body)
+}
+
+// apiRequest sends a request to {base_url}{path} and returns the body of a 2xx
+// response. A nil payload sends no body.
+func apiRequest(cfg config, method, path string, payload any, timeout time.Duration) ([]byte, error) {
+	var body io.Reader
+	if payload != nil {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			return nil, err
+		}
+		body = bytes.NewReader(encoded)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, cfg.BaseURL+"/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest(method, cfg.BaseURL+path, body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	if cfg.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	}
 
-	client := &http.Client{Timeout: requestTimeout}
+	client := &http.Client{Timeout: timeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", describeRequestError(err, cfg.BaseURL)
+		return nil, describeRequestError(err, cfg.BaseURL, timeout)
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", describeRequestError(err, cfg.BaseURL)
+		return nil, describeRequestError(err, cfg.BaseURL, timeout)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return "", fmt.Errorf("server returned %d: %s", resp.StatusCode, shortBody(data))
+		return nil, &httpStatusError{Code: resp.StatusCode, Body: shortBody(data)}
+	}
+	return data, nil
+}
+
+// chatCompletion posts to /chat/completions and returns the first choice.
+func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (string, error) {
+	data, err := apiRequest(cfg, http.MethodPost, "/chat/completions", request, timeout)
+	if err != nil {
+		return "", err
 	}
 
 	var parsed chatResponse
@@ -114,10 +146,10 @@ func suggestSubjects(cfg config, input string, n int) ([]string, error) {
 	return nil, errNoSubjects
 }
 
-func describeRequestError(err error, baseURL string) error {
+func describeRequestError(err error, baseURL string, timeout time.Duration) error {
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
-		return fmt.Errorf("request to %s timed out after %s", baseURL, requestTimeout)
+		return fmt.Errorf("request to %s timed out after %s", baseURL, timeout)
 	}
 	var dnsErr *net.DNSError
 	if errors.Is(err, syscall.ECONNREFUSED) || errors.As(err, &dnsErr) {
