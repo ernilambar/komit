@@ -70,8 +70,8 @@ The interactive menu needs a terminal. In scripts or with piped stdin, use `-y` 
 
 ```
 $ komit status
-Base URL   http://127.0.0.1:9090/v1
-Model      gemma-4-e4b-it-4bit
+Base URL   http://127.0.0.1:11434/v1
+Model      gemma3:4b
 API key    not set
 
 ✓ Server reachable        42ms
