@@ -49,6 +49,8 @@ The selection menu:
 | `--dry-run` | Print the candidates and exit without committing |
 | `--no-push` | Commit without pushing |
 | `--model <name>` | Override `KOMIT_MODEL` |
+| `-V`, `--version` | Print version and exit |
+| `-h`, `--help` | Print help and exit |
 
 Short flags can be combined, e.g. `-ay`.
 

@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// version is the build version, overridable at release time via
+// -ldflags "-X main.version=vX.Y.Z".
+var version = "dev"
+
 type options struct {
 	dryRun bool
 	noPush bool
@@ -34,7 +38,19 @@ func run() int {
 	pflag.StringVar(&opts.model, "model", "", "model to use (overrides KOMIT_MODEL)")
 	pflag.BoolVarP(&opts.yes, "yes", "y", false, "commit the first suggestion without prompting")
 	pflag.IntVarP(&opts.count, "count", "n", 2, "number of subject candidates (1-5)")
+	showVersion := pflag.BoolP("version", "V", false, "print version and exit")
+	showHelp := pflag.BoolP("help", "h", false, "print help and exit")
 	pflag.Parse()
+
+	if *showHelp {
+		pflag.CommandLine.SetOutput(os.Stdout)
+		pflag.Usage()
+		return 0
+	}
+	if *showVersion {
+		fmt.Println(version)
+		return 0
+	}
 
 	if err := validateFlags(opts, pflag.CommandLine.Changed("count")); err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)
