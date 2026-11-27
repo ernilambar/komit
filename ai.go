@@ -30,9 +30,13 @@ type chatRequest struct {
 	Messages []chatMessage `json:"messages"`
 }
 
-// sessionID identifies this run to servers that route by session, such as
-// OpenCode Go, which rejects requests without x-opencode-session.
+// sessionID identifies this run to OpenCode, whose Go endpoint rejects
+// requests without x-opencode-session.
 var sessionID = newSessionID()
+
+func isOpenCode(host string) bool {
+	return host == "opencode.ai" || strings.HasSuffix(host, ".opencode.ai")
+}
 
 func newSessionID() string {
 	b := make([]byte, 16)
@@ -100,7 +104,9 @@ func apiRequest(cfg config, method, path string, payload any, timeout time.Durat
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("User-Agent", "komit")
-	req.Header.Set("x-opencode-session", sessionID)
+	if isOpenCode(req.URL.Hostname()) {
+		req.Header.Set("x-opencode-session", sessionID)
+	}
 	if cfg.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	}
