@@ -94,6 +94,24 @@ func generateSubjects(cfg config, input string, n int) (string, error) {
 	return parsed.Choices[0].Message.Content, nil
 }
 
+// suggestSubjects generates and cleans up to n subjects, regenerating once if
+// every candidate is rejected.
+func suggestSubjects(cfg config, input string, n int) ([]string, error) {
+	for attempt := 0; attempt < 2; attempt++ {
+		raw, err := generateSubjects(cfg, input, n)
+		if err != nil {
+			return nil, err
+		}
+		if subjects := cleanSubjects(raw); len(subjects) > 0 {
+			if len(subjects) > n {
+				subjects = subjects[:n]
+			}
+			return subjects, nil
+		}
+	}
+	return nil, errors.New("model returned no valid subjects")
+}
+
 func describeRequestError(err error, baseURL string) error {
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {

@@ -68,17 +68,22 @@ func run() int {
 		return 1
 	}
 
-	raw, err := generateSubjects(cfg, input, opts.count)
+	subjects, err := suggestSubjects(cfg, input, opts.count)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)
 		return 1
 	}
 
-	// Temporary Phase 3 output: cleaned subjects until the dry-run flow lands.
-	for _, subject := range cleanSubjects(raw) {
-		fmt.Println(subject)
+	if opts.dryRun {
+		for i, subject := range subjects {
+			fmt.Printf("%d. %s\n", i+1, subject)
+		}
+		return 0
 	}
-	return 0
+
+	// Commit and push land in Phase 5.
+	fmt.Fprintln(os.Stderr, "komit: committing is not implemented yet; use --dry-run")
+	return 1
 }
 
 func validateFlags(opts options, countSet bool) error {
