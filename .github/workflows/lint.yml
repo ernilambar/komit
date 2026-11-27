@@ -50,7 +50,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: latest
+          version: v2.15.0
 
   test:
     name: test (macOS 15, arm64)

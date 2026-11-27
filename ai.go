@@ -116,7 +116,7 @@ func apiRequest(cfg config, method, path string, payload any, timeout time.Durat
 	if err != nil {
 		return nil, describeRequestError(err, cfg.BaseURL, timeout)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
