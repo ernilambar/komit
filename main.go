@@ -68,9 +68,16 @@ func run() int {
 		return 1
 	}
 
-	// Temporary Phase 1 output: model input dump until generation lands.
-	fmt.Fprintf(os.Stderr, "komit: model=%s base_url=%s\n", cfg.Model, cfg.BaseURL)
-	fmt.Print(input)
+	raw, err := generateSubjects(cfg, input, opts.count)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "komit:", err)
+		return 1
+	}
+
+	// Temporary Phase 3 output: cleaned subjects until the dry-run flow lands.
+	for _, subject := range cleanSubjects(raw) {
+		fmt.Println(subject)
+	}
 	return 0
 }
 
