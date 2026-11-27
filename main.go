@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
+	"charm.land/huh/v2"
 	"github.com/spf13/pflag"
 )
 
@@ -41,6 +43,10 @@ func run() int {
 	if opts.yes {
 		opts.count = 1
 	}
+	if !opts.dryRun && !opts.yes && !stdinIsTTY() {
+		fmt.Fprintln(os.Stderr, "komit: stdin is not a terminal; use -y or --dry-run")
+		return 1
+	}
 
 	cfg := loadConfig()
 	if opts.model != "" {
@@ -68,22 +74,32 @@ func run() int {
 		return 1
 	}
 
-	subjects, err := suggestSubjects(cfg, input, opts.count)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "komit:", err)
-		return 1
-	}
-
-	if opts.dryRun {
-		for i, subject := range subjects {
-			fmt.Printf("%d. %s\n", i+1, subject)
+	var subject string
+	if opts.dryRun || opts.yes {
+		subjects, err := suggestSubjects(cfg, input, opts.count)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "komit:", err)
+			return 1
 		}
-		return 0
+		if opts.dryRun {
+			for i, subject := range subjects {
+				fmt.Printf("%d. %s\n", i+1, subject)
+			}
+			return 0
+		}
+		subject = subjects[0]
+		fmt.Println(subject)
+	} else {
+		subject, err = chooseSubject(cfg, input, opts.count)
+		if errors.Is(err, huh.ErrUserAborted) {
+			return 0
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "komit:", err)
+			return 1
+		}
 	}
 
-	// Temporary: commit the first suggestion until -y (Phase 6) and the
-	// interactive prompt (Phase 7) land.
-	subject := subjects[0]
 	if err := commit(subject); err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)
 		return 1

@@ -94,6 +94,8 @@ func generateSubjects(cfg config, input string, n int) (string, error) {
 	return parsed.Choices[0].Message.Content, nil
 }
 
+var errNoSubjects = errors.New("model returned no valid subjects")
+
 // suggestSubjects generates and cleans up to n subjects, regenerating once if
 // every candidate is rejected.
 func suggestSubjects(cfg config, input string, n int) ([]string, error) {
@@ -109,7 +111,7 @@ func suggestSubjects(cfg config, input string, n int) ([]string, error) {
 			return subjects, nil
 		}
 	}
-	return nil, errors.New("model returned no valid subjects")
+	return nil, errNoSubjects
 }
 
 func describeRequestError(err error, baseURL string) error {
