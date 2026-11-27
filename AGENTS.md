@@ -57,6 +57,17 @@ static analysis.
 - **Exit codes are a contract.** Return `int` from `run()` and use exit codes `0` success,
   `1` error, `130` cancelled (see README). Never call `os.Exit` outside `main`. A failed
   push must keep the commit.
+- **Changelog.** `CHANGELOG.md` is maintained with
+  [`@nilambar/flatlog`](https://github.com/ernilambar/flatlog). Record user-facing changes
+  with `npx @nilambar/flatlog bullet "Added: ..."` (allowed prefixes: `Added:`, `Changed:`,
+  `Fixed:`), promote the unreleased block with `npx @nilambar/flatlog release <version>`
+  before tagging, and run `npx @nilambar/flatlog validate <version>` to verify the result.
+
+## Releases
+
+1. Add pending entries, then promote them: `npx @nilambar/flatlog release <version>`.
+2. Validate the changelog: `npx @nilambar/flatlog validate <version>`. Validation fails
+   while an unreleased (`X.X.X`) block exists, so run it only after promoting the release.
 
 ## Quality gate
 
