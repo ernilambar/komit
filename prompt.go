@@ -31,8 +31,9 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 	}
 
 	for {
+		var prefill string
 		if !writeOwn {
-			pick, err := selectSubject(subjects)
+			pick, edit, err := selectSubject(subjects)
 			if err != nil {
 				return "", err
 			}
@@ -45,13 +46,14 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 				}
 				continue
 			case pickWriteOwn:
+				prefill = edit
 			default:
 				return subjects[pick], nil
 			}
 		}
 		writeOwn = false
 
-		subject, err := inputSubject()
+		subject, err := inputSubject(prefill)
 		if err != nil {
 			return "", err
 		}
@@ -61,40 +63,53 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 	}
 }
 
-func selectSubject(subjects []string) (int, error) {
+// selectSubject shows the subject list. Pressing e returns pickWriteOwn with the
+// highlighted suggestion (empty for the other rows) to edit; r regenerates.
+func selectSubject(subjects []string) (int, string, error) {
 	options := make([]huh.Option[int], 0, len(subjects)+2)
 	for i, s := range subjects {
 		options = append(options, huh.NewOption(s, i))
 	}
 	options = append(options,
 		huh.NewOption("↻ Regenerate", pickRegenerate),
-		huh.NewOption("✎ Write my own (e)", pickWriteOwn),
+		huh.NewOption("✎ Write my own", pickWriteOwn),
 	)
 
 	var pick int
-	writeOwn := false
-	// Pressing e jumps straight to the custom subject input.
+	var edit string
+	field := huh.NewSelect[int]().
+		Title("Commit subject").
+		Description("e edit · r regenerate").
+		Options(options...).
+		Value(&pick)
 	filter := func(_ tea.Model, msg tea.Msg) tea.Msg {
-		if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "e" {
-			writeOwn = true
-			return tea.QuitMsg{}
+		k, ok := msg.(tea.KeyPressMsg)
+		if !ok {
+			return msg
 		}
-		return msg
+		switch k.String() {
+		case "e":
+			pick = pickWriteOwn
+			if i, ok := field.Hovered(); ok && i >= 0 {
+				edit = subjects[i]
+			}
+		case "r":
+			pick = pickRegenerate
+		default:
+			return msg
+		}
+		return tea.QuitMsg{}
 	}
-	field := huh.NewSelect[int]().Title("Commit subject").Options(options...).Value(&pick)
 	if err := runField(field, tea.WithFilter(filter)); err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	if writeOwn {
-		return pickWriteOwn, nil
-	}
-	return pick, nil
+	return pick, edit, nil
 }
 
-// inputSubject prompts for a custom subject. An empty result means the user
-// wants to go back to the list.
-func inputSubject() (string, error) {
-	var value string
+// inputSubject prompts for a custom subject, starting from initial. An empty
+// result means the user wants to go back to the list.
+func inputSubject(initial string) (string, error) {
+	value := initial
 	field := huh.NewInput().Title("Commit subject").Value(&value).Validate(func(s string) error {
 		if strings.TrimSpace(s) == "" {
 			return nil

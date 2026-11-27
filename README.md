@@ -33,7 +33,7 @@ komit status
 
 Stage changes, then run `komit`. It sends the staged diff to the model, shows the candidates, commits the one you pick, and pushes the branch (`git push -u origin HEAD` if it has no upstream).
 
-The menu offers the generated subjects, `↻ Regenerate`, and `✎ Write my own` (submit empty to go back). `Esc` or `Ctrl+C` cancels without committing.
+The menu offers the generated subjects, `↻ Regenerate`, and `✎ Write my own` (submit empty to go back). Press `e` to edit the highlighted subject, or `r` to regenerate. `Esc` or `Ctrl+C` cancels without committing.
 
 ### Flags
 
