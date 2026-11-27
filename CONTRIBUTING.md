@@ -7,27 +7,27 @@ Requires Go 1.27.3 or later (see `go.mod`).
 ```sh
 git clone https://github.com/ernilambar/komit.git
 cd komit
-go build .
+scripts/dev.sh build
 ```
 
-To try changes against a model, run any OpenAI-compatible server and set `KOMIT_BASE_URL` and `KOMIT_MODEL` for it. Check the connection with:
+To try changes against a model, run any OpenAI-compatible server and set `KOMIT_BASE_URL` and `KOMIT_MODEL` for it, either exported or in a `.env` file (gitignored, loaded by `scripts/dev.sh`). Check the connection with:
 
 ```sh
-go run . status
+scripts/dev.sh status
 ```
 
-Use `--dry-run` while iterating so nothing gets committed:
+`scripts/dev.sh run` always passes `--dry-run`, so nothing gets committed while iterating:
 
 ```sh
-go run . --dry-run -n 4
+scripts/dev.sh run -n 4
 ```
+
+Run `scripts/dev.sh` with no arguments to list all commands.
 
 ## Before opening a pull request
 
 ```sh
-gofmt -l .        # should print nothing
-go vet ./...
-go test ./...
+scripts/dev.sh check   # gofmt, go vet, go test -race (same as CI)
 ```
 
 ## Project layout
