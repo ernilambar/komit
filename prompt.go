@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 )
 
@@ -67,13 +68,25 @@ func selectSubject(subjects []string) (int, error) {
 	}
 	options = append(options,
 		huh.NewOption("↻ Regenerate", pickRegenerate),
-		huh.NewOption("✎ Write my own", pickWriteOwn),
+		huh.NewOption("✎ Write my own (e)", pickWriteOwn),
 	)
 
 	var pick int
+	writeOwn := false
+	// Pressing e jumps straight to the custom subject input.
+	filter := func(_ tea.Model, msg tea.Msg) tea.Msg {
+		if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "e" {
+			writeOwn = true
+			return tea.QuitMsg{}
+		}
+		return msg
+	}
 	field := huh.NewSelect[int]().Title("Commit subject").Options(options...).Value(&pick)
-	if err := runField(field); err != nil {
+	if err := runField(field, tea.WithFilter(filter)); err != nil {
 		return 0, err
+	}
+	if writeOwn {
+		return pickWriteOwn, nil
 	}
 	return pick, nil
 }
@@ -101,10 +114,10 @@ func inputSubject() (string, error) {
 	return subject, nil
 }
 
-func runField(field huh.Field) error {
+func runField(field huh.Field, opts ...tea.ProgramOption) error {
 	keymap := huh.NewDefaultKeyMap()
 	keymap.Quit = key.NewBinding(key.WithKeys("ctrl+c", "esc"))
 	// Filtering would make Esc ambiguous; the list is short enough without it.
 	keymap.Select.Filter = key.NewBinding()
-	return huh.NewForm(huh.NewGroup(field)).WithKeyMap(keymap).Run()
+	return huh.NewForm(huh.NewGroup(field)).WithKeyMap(keymap).WithProgramOptions(opts...).Run()
 }

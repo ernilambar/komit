@@ -1,5 +1,8 @@
 # Changelog
 
+## X.X.X - YYYY-MM-DD
+- Added: Press e in the subject list to write a custom subject
+
 ## 0.1.0 - 2026-11-27
 - Added: Generate commit subjects from the staged diff with an OpenAI-compatible model
 - Added: Subject picker with regenerate and write-your-own options
