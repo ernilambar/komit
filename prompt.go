@@ -50,11 +50,7 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 		}
 		writeOwn = false
 
-		prefill := ""
-		if len(subjects) > 0 {
-			prefill = subjects[0]
-		}
-		subject, err := inputSubject(prefill)
+		subject, err := inputSubject()
 		if err != nil {
 			return "", err
 		}
@@ -84,8 +80,8 @@ func selectSubject(subjects []string) (int, error) {
 
 // inputSubject prompts for a custom subject. An empty result means the user
 // wants to go back to the list.
-func inputSubject(prefill string) (string, error) {
-	value := prefill
+func inputSubject() (string, error) {
+	var value string
 	field := huh.NewInput().Title("Commit subject").Value(&value).Validate(func(s string) error {
 		if strings.TrimSpace(s) == "" {
 			return nil

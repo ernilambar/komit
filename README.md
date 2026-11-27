@@ -35,7 +35,7 @@ The selection menu:
 
 - AI-generated subjects
 - `↻ Regenerate`: ask the model for new candidates
-- `✎ Write my own`: edit a subject, prefilled with the first suggestion. Submit empty to go back to the list.
+- `✎ Write my own`: type a subject. Submit empty to go back to the list.
 
 `Esc` or `Ctrl+C` cancels without committing.
 
