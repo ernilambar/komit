@@ -1,0 +1,22 @@
+# Binaries
+/komit
+/dist/
+*.exe
+*.test
+
+# Coverage
+*.out
+coverage.*
+
+# Go workspace
+go.work
+go.work.sum
+
+# Env
+.env
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
