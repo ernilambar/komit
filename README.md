@@ -4,23 +4,17 @@ Generate a commit subject from your staged changes with an OpenAI-compatible mod
 
 Subjects follow one style: plain imperative mood, single line, at most 72 characters, no trailing period, no Conventional Commit prefix, no body.
 
-## Requirements
-
-- macOS 15 (Sequoia) or later on Apple Silicon (`arm64`).
-- [git](https://git-scm.com) on `PATH`.
-- An OpenAI-compatible chat-completions endpoint.
+Requires macOS 15 (Sequoia) or later on Apple Silicon, [git](https://git-scm.com) on `PATH`, and an OpenAI-compatible chat-completions endpoint.
 
 ## Install
 
-Prebuilt macOS 15+ (Apple Silicon) binaries are attached to each release. Or install from source with Go 1.27.3 or later:
-
 ```sh
-go install github.com/ernilambar/komit@latest
+brew install ernilambar/tap/komit
 ```
 
-## Configuration
+Prebuilt binaries and installing from source: [docs/install.md](docs/install.md).
 
-Set through environment variables:
+## Configuration
 
 | Variable | Required | Description |
 |---|---|---|
@@ -37,15 +31,9 @@ komit [flags]
 komit status
 ```
 
-Stage changes, then run `komit`. It sends the staged diff to the model, shows the candidates, and commits the one you pick. Then it pushes the current branch. If the branch has no upstream, it runs `git push -u origin HEAD`.
+Stage changes, then run `komit`. It sends the staged diff to the model, shows the candidates, commits the one you pick, and pushes the branch (`git push -u origin HEAD` if it has no upstream).
 
-The selection menu:
-
-- AI-generated subjects
-- `↻ Regenerate`: ask the model for new candidates
-- `✎ Write my own`: type a subject. Submit empty to go back to the list.
-
-`Esc` or `Ctrl+C` cancels without committing.
+The menu offers the generated subjects, `↻ Regenerate`, and `✎ Write my own` (submit empty to go back). `Esc` or `Ctrl+C` cancels without committing.
 
 ### Flags
 
@@ -69,7 +57,6 @@ komit                  # pick from 2 candidates, commit, push
 komit -a -n 4          # stage all changes, pick from 4 candidates
 komit -ay              # stage, commit the first suggestion, push
 komit --dry-run        # preview candidates only
-komit -y --no-push     # commit without prompting, skip push
 ```
 
 The interactive menu needs a terminal. In scripts or with piped stdin, use `-y` or `--dry-run`.
@@ -89,7 +76,7 @@ API key    not set
 ✓ Generation works        810ms
 ```
 
-Server and model problems are warnings. It exits 1 if a required variable is missing or the generation check fails.
+Server and model problems are warnings; missing required config or a failed generation check exits 1.
 
 ## What gets sent
 
