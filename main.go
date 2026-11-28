@@ -106,7 +106,7 @@ func run() int {
 
 	var subject string
 	if opts.dryRun || opts.yes {
-		subjects, err := suggestSubjects(cfg, input, opts.count)
+		subjects, err := suggestSubjects(cfg, input, opts.count, nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "komit:", err)
 			return 1

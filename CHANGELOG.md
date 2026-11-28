@@ -3,6 +3,11 @@
 ## X.X.X - YYYY-MM-DD
 - Changed: Describe the subject style without example wording the model copied into subjects
 - Changed: Split the 4 KB diff budget evenly across staged files so every file keeps its header
+- Changed: Regenerate asks for new subjects instead of repeating the same list
+- Changed: Send file status (added, modified, deleted, renamed) instead of diff stat
+- Changed: Send one line of diff context so more changes fit in the budget
+- Changed: Ask for specific, distinct subjects that describe the change's intent
+- Changed: Leave source maps, SVGs, dist, vendor and snapshot files out of the diff
 
 ## 0.1.2 - 2026-11-28
 - Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies

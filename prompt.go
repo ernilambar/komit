@@ -25,11 +25,13 @@ func stdinIsTTY() bool {
 // chooseSubject runs the interactive selection loop and returns the subject to
 // commit. It returns huh.ErrUserAborted when the user cancels.
 func chooseSubject(cfg config, input string, n int) (string, error) {
-	subjects, err := generateWithSpinner(cfg, input, n)
+	subjects, err := generateWithSpinner(cfg, input, n, nil)
 	writeOwn := errors.Is(err, errNoSubjects)
 	if err != nil && !writeOwn {
 		return "", err
 	}
+	// rejected collects every list the user regenerated away from.
+	var rejected []string
 	var notice string
 	if writeOwn {
 		notice = capitalize(err.Error())
@@ -46,13 +48,15 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 			switch pick {
 			case pickRegenerate:
 				// A failed regenerate keeps the current list and says why.
-				fresh, err := generateWithSpinner(cfg, input, n)
+				avoid := append(rejected, subjects...)
+				fresh, err := generateWithSpinner(cfg, input, n, avoid)
 				switch {
 				case errors.Is(err, huh.ErrUserAborted):
 					return "", err
 				case err != nil:
 					notice = "Regenerate failed: " + err.Error()
 				default:
+					rejected = avoid
 					subjects = fresh
 				}
 				continue
@@ -77,13 +81,13 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 
 // generateWithSpinner runs suggestSubjects behind a spinner. Ctrl+C returns
 // huh.ErrUserAborted.
-func generateWithSpinner(cfg config, input string, n int) ([]string, error) {
+func generateWithSpinner(cfg config, input string, n int, rejected []string) ([]string, error) {
 	var subjects []string
 	err := spinner.New().
 		Title(" Generating subjects…").
 		ActionWithErr(func(context.Context) error {
 			var err error
-			subjects, err = suggestSubjects(cfg, input, n)
+			subjects, err = suggestSubjects(cfg, input, n, rejected)
 			return err
 		}).
 		Run()

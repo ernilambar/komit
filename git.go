@@ -24,6 +24,11 @@ var diffPathspecs = []string{
 	":(top,exclude)package-lock.json",
 	":(top,exclude)go.sum",
 	":(top,exclude)*.min.*",
+	":(top,exclude)*.map",
+	":(top,exclude)*.svg",
+	":(top,exclude,glob)**/dist/**",
+	":(top,exclude,glob)**/vendor/**",
+	":(top,exclude,glob)**/__snapshots__/**",
 }
 
 var (
@@ -85,16 +90,19 @@ func checkStaged() error {
 	return fmt.Errorf("git diff --cached --quiet: %s", msg)
 }
 
-func stagedStat() (string, error) {
-	out, err := gitOutput("diff", "--cached", "--stat")
+// stagedFiles lists staged paths with their A/M/D/R status, which tells the
+// model directly whether a file was added, changed, removed or renamed.
+func stagedFiles() (string, error) {
+	out, err := gitOutput("diff", "--cached", "--name-status")
 	if err != nil {
-		return "", fmt.Errorf("git diff --cached --stat: %w", err)
+		return "", fmt.Errorf("git diff --cached --name-status: %w", err)
 	}
 	return out, nil
 }
 
 func stagedDiff() (string, error) {
-	args := append([]string{"diff", "--cached", "--no-ext-diff", "--"}, diffPathspecs...)
+	// One context line leaves more of the budget for the changes themselves.
+	args := append([]string{"diff", "--cached", "--no-ext-diff", "-U1", "--"}, diffPathspecs...)
 	out, err := gitOutput(args...)
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached: %w", err)
@@ -239,10 +247,10 @@ func cutLines(s string, limit int) string {
 	return ""
 }
 
-// buildModelInput assembles the staged stat and the filtered, size-capped diff
-// sent to the model.
+// buildModelInput assembles the staged file list and the filtered, size-capped
+// diff sent to the model.
 func buildModelInput() (string, error) {
-	stat, err := stagedStat()
+	files, err := stagedFiles()
 	if err != nil {
 		return "", err
 	}
@@ -252,9 +260,9 @@ func buildModelInput() (string, error) {
 	}
 
 	var b strings.Builder
-	b.WriteString("Staged changes (stat):\n")
-	b.WriteString(stat)
-	if stat != "" && !strings.HasSuffix(stat, "\n") {
+	b.WriteString("Staged files (A added, M modified, D deleted, R renamed):\n")
+	b.WriteString(files)
+	if files != "" && !strings.HasSuffix(files, "\n") {
 		b.WriteByte('\n')
 	}
 	b.WriteString("\nStaged diff:\n")

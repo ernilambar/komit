@@ -23,7 +23,7 @@ func TestSuggestSubjectsEmptyReply(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			_, err := suggestSubjects(config{BaseURL: srv.URL, Model: "m"}, "diff", 2)
+			_, err := suggestSubjects(config{BaseURL: srv.URL, Model: "m"}, "diff", 2, nil)
 			if err != tt.want {
 				t.Fatalf("err = %v, want %v", err, tt.want)
 			}

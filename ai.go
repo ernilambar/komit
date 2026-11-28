@@ -66,16 +66,30 @@ Rules:
 - Single line, at most %d characters.
 - No Conventional Commit prefixes (no "feat:", "fix:", etc.).
 - No trailing period, no body, no trailers.
+- Describe the intent of the main change, not a list of edits.
+- Name the specific component, file or behavior that changed.
+- Avoid vague verbs and objects such as "Update code" or "Change files".
+- Make each subject meaningfully different from the others.
 
 Return exactly %d subjects, one per line, nothing else.`, maxSubjectLen, n)
 }
 
+// regenerateTemperature adds variety when the user rejects the first list;
+// the same request at temperature 0 would return the same subjects.
+const regenerateTemperature = 0.7
+
 // generateSubjects asks the model for n commit subjects and returns its raw
-// reply for cleanup. Output is capped and sampling made deterministic, so the
-// reply is short and stable for the same diff. It also returns the finish
-// reason, which is "length" when the reply hit maxResponseTokens.
-func generateSubjects(cfg config, input string, n int) (string, string, error) {
+// reply for cleanup. Output is capped and the first request is deterministic,
+// so the reply is short and stable for the same diff. Rejected subjects from
+// earlier lists are listed for the model to avoid, with sampling loosened. It
+// also returns the finish reason, which is "length" when the reply hit
+// maxResponseTokens.
+func generateSubjects(cfg config, input string, n int, rejected []string) (string, string, error) {
 	temperature := 0.0
+	if len(rejected) > 0 {
+		temperature = regenerateTemperature
+		input += "\n\nThe user rejected these subjects; write different ones:\n" + strings.Join(rejected, "\n")
+	}
 	return chatCompletion(cfg, chatRequest{
 		Model: cfg.Model,
 		Messages: []chatMessage{
@@ -167,11 +181,11 @@ var errNoSubjects = errors.New("model returned no valid subjects")
 // typically a reasoning model spending it on thinking.
 var errTokenLimit = fmt.Errorf("%w: reply hit the token limit; set KOMIT_REASONING_EFFORT=none", errNoSubjects)
 
-// suggestSubjects generates and cleans up to n subjects. A reply with no
-// valid subject is reported as errNoSubjects; regenerating is left to the
-// user rather than costing a second hidden request.
-func suggestSubjects(cfg config, input string, n int) ([]string, error) {
-	raw, finishReason, err := generateSubjects(cfg, input, n)
+// suggestSubjects generates and cleans up to n subjects, avoiding rejected
+// ones. A reply with no valid subject is reported as errNoSubjects;
+// regenerating is left to the user rather than costing a second hidden request.
+func suggestSubjects(cfg config, input string, n int, rejected []string) ([]string, error) {
+	raw, finishReason, err := generateSubjects(cfg, input, n, rejected)
 	if err != nil {
 		return nil, err
 	}
