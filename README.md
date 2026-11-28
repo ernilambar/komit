@@ -81,7 +81,7 @@ Server and model problems are warnings; missing required config or a failed gene
 
 ## What gets sent
 
-- `git diff --cached --name-status`, always in full.
+- `git diff --cached --name-status`, capped at 50 files with a count of the rest.
 - The staged diff with one line of context, capped at 4 KB and split evenly across files, so every file keeps its header and a share of its hunks. Changes to `*.lock`, `package-lock.json`, `go.sum`, `*.min.*`, `*.map` and `*.svg` files, and to `dist/`, `vendor/` and `__snapshots__/` directories, are left out.
 - On regenerate, the subjects already rejected, with sampling loosened so the new list differs.
 

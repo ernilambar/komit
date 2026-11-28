@@ -103,6 +103,33 @@ func TestCapDiffFallsBackWhenHeadersDoNotFit(t *testing.T) {
 	}
 }
 
+func TestCapFiles(t *testing.T) {
+	list := func(n int) string {
+		var b strings.Builder
+		for i := range n {
+			fmt.Fprintf(&b, "M\tfile%d.go\n", i)
+		}
+		return b.String()
+	}
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"empty", "", ""},
+		{"under cap", list(3), list(3)},
+		{"at cap", list(maxFileLines), list(maxFileLines)},
+		{"over cap", list(maxFileLines + 7), list(maxFileLines) + "… and 7 more files\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := capFiles(tt.in); got != tt.want {
+				t.Fatalf("capFiles() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCapDiffKeepsSmallDiff(t *testing.T) {
 	out := fakeDiff(2, 3)
 	if got := capDiff(out); got != out {

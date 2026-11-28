@@ -15,6 +15,9 @@ const (
 	diffTruncatedMarker = "\n[diff truncated]\n"
 	// fileTruncatedMarker follows a file section whose hunks were cut short.
 	fileTruncatedMarker = "\n[file diff truncated]\n"
+	// maxFileLines bounds the staged file list, which would otherwise grow
+	// with the commit and bypass the diff cap.
+	maxFileLines = 50
 )
 
 // diffPathspecs cover the whole repo even when komit runs from a subdirectory.
@@ -97,7 +100,17 @@ func stagedFiles() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached --name-status: %w", err)
 	}
-	return out, nil
+	return capFiles(out), nil
+}
+
+// capFiles keeps the first maxFileLines lines of out and counts the rest.
+func capFiles(out string) string {
+	lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+	if len(lines) <= maxFileLines {
+		return out
+	}
+	more := len(lines) - maxFileLines
+	return strings.Join(lines[:maxFileLines], "\n") + fmt.Sprintf("\n… and %d more files\n", more)
 }
 
 func stagedDiff() (string, error) {

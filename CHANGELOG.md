@@ -8,6 +8,7 @@
 - Changed: Send one line of diff context so more changes fit in the budget
 - Changed: Ask for specific, distinct subjects that describe the change's intent
 - Changed: Leave source maps, SVGs, dist, vendor and snapshot files out of the diff
+- Changed: Cap the staged file list sent to the model at 50 files
 
 ## 0.1.2 - 2026-11-28
 - Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies
