@@ -14,77 +14,15 @@ brew install ernilambar/tap/komit
 
 Prebuilt binaries and installing from source: [docs/install.md](docs/install.md).
 
-## Configuration
-
-| Variable | Required | Description |
-|---|---|---|
-| `KOMIT_BASE_URL` | Yes | OpenAI-compatible API base URL, e.g. `http://127.0.0.1:11434/v1` |
-| `KOMIT_MODEL` | Yes, unless `--model` is passed | Model name |
-| `KOMIT_API_KEY` | No | Sent as `Authorization: Bearer` when set |
-| `KOMIT_REASONING_EFFORT` | No | Sent as `reasoning_effort` when set; use `none` to make reasoning models faster and cheaper |
-
-komit exits with an error if a required variable is missing.
-
 ## Usage
 
 ```sh
-komit [flags]
-komit status
+komit
 ```
 
-Stage changes, then run `komit`. It sends the staged diff to the model, shows the candidates, commits the one you pick, and pushes the branch (`git push -u origin HEAD` if it has no upstream).
+Stage your changes, then run `komit`. It sends the staged diff to the model, shows the candidates, commits the one you pick, and pushes the branch. The interactive menu needs a terminal; in scripts or with piped stdin, use `-y` or `--dry-run`.
 
-The menu offers the generated subjects, `↻ Regenerate`, and `✎ Write my own` (submit empty to go back). Press `e` to edit the highlighted subject, or `r` to regenerate. `Esc` or `Ctrl+C` cancels without committing.
-
-### Flags
-
-| Flag | Description |
-|---|---|
-| `-a`, `--all` | Stage all changes first, including untracked files (`git add -A`) |
-| `-y`, `--yes` | Commit the first suggestion without prompting |
-| `-n`, `--count <n>` | Number of candidates, 1–5 (default 2). Cannot be combined with `-y` unless `-n 1` |
-| `--dry-run` | Print the candidates and exit without committing. With `-a`, changes stay staged |
-| `--no-push` | Commit without pushing |
-| `--model <name>` | Override `KOMIT_MODEL` |
-| `-V`, `--version` | Print version and exit |
-| `-h`, `--help` | Print help and exit |
-
-Short flags can be combined, e.g. `-ay`.
-
-### Examples
-
-```sh
-komit                  # pick from 2 candidates, commit, push
-komit -a -n 4          # stage all changes, pick from 4 candidates
-komit -ay              # stage, commit the first suggestion, push
-komit --dry-run        # preview candidates only
-```
-
-The interactive menu needs a terminal. In scripts or with piped stdin, use `-y` or `--dry-run`.
-
-### Status
-
-`komit status` prints the configuration and checks the server:
-
-```
-$ komit status
-Base URL   http://127.0.0.1:11434/v1
-Model      gemma3:4b
-API key    not set
-Reasoning  not set
-
-✓ Server reachable        42ms
-✓ Model available
-✓ Generation works        810ms
-```
-
-Server and model problems are warnings; missing required config or a failed generation check exits 1.
-
-## What gets sent
-
-- `git diff --cached --name-status`, capped at 50 files with a count of the rest.
-- The staged diff with one line of context, capped at 4 KB and split evenly across files, so every file keeps its header and a share of its hunks. Changes to `*.lock`, `package-lock.json`, `go.sum`, `*.min.*`, `*.map` and `*.svg` files, and to `dist/`, `vendor/` and `__snapshots__/` directories, are left out.
-- On regenerate, the subjects already rejected, with sampling loosened so the new list differs.
+Configuration, flags, examples, status checks, and what gets sent: [docs/usage.md](docs/usage.md).
 
 ## Exit codes
 

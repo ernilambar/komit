@@ -51,4 +51,4 @@ go install github.com/ernilambar/komit@latest
 komit --version
 ```
 
-Next: [configure a model](../README.md#configuration).
+Next: [configure a model](usage.md#configuration).
