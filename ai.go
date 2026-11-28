@@ -18,9 +18,9 @@ import (
 const (
 	requestTimeout = 60 * time.Second
 	maxErrorBody   = 200
-	// maxResponseTokens bounds the reply; five 72-character subjects need far
-	// less, and a model that rambles should not hold up the commit.
-	maxResponseTokens = 200
+	// maxResponseTokens bounds the reply. Five 72-character subjects need far
+	// less, but reasoning models count hidden thinking tokens against it.
+	maxResponseTokens = 4096
 )
 
 type chatMessage struct {

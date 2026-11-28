@@ -1,5 +1,8 @@
 # Changelog
 
+## X.X.X - YYYY-MM-DD
+- Fixed: Reasoning models hitting the token limit when KOMIT_REASONING_EFFORT is unset
+
 ## 0.1.3 - 2026-11-28
 - Changed: Split the 4 KB diff budget evenly across staged files so every file keeps its header
 - Changed: Regenerate asks for new subjects instead of repeating the same list
