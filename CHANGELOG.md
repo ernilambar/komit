@@ -2,6 +2,7 @@
 
 ## X.X.X - YYYY-MM-DD
 - Changed: Describe the subject style without example wording the model copied into subjects
+- Changed: Split the 4 KB diff budget evenly across staged files so every file keeps its header
 
 ## 0.1.2 - 2026-11-28
 - Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies

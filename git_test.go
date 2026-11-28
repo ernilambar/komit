@@ -1,12 +1,114 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// fakeDiff builds git diff output with files sections, each carrying lines
+// body lines after its hunk header.
+func fakeDiff(files, body int) string {
+	var b strings.Builder
+	for i := range files {
+		fmt.Fprintf(&b, "diff --git a/f%d.txt b/f%d.txt\n", i, i)
+		fmt.Fprintf(&b, "index 0000000..1111111 100644\n--- a/f%d.txt\n+++ b/f%d.txt\n", i, i)
+		fmt.Fprintf(&b, "@@ -1,%d +1,%d @@\n", body, body)
+		for j := range body {
+			fmt.Fprintf(&b, "+change %d in file %d with padding\n", j, i)
+		}
+	}
+	return b.String()
+}
+
+func TestCapDiffKeepsEveryFileHeader(t *testing.T) {
+	const files = 4
+	out := fakeDiff(files, 200)
+	if len(out) <= maxDiffBytes {
+		t.Fatalf("fixture is %d bytes, want more than %d", len(out), maxDiffBytes)
+	}
+
+	got := capDiff(out)
+	if n := strings.Count(got, "diff --git "); n != files {
+		t.Errorf("kept %d file headers, want %d", n, files)
+	}
+	if n := strings.Count(got, fileTruncatedMarker); n != files {
+		t.Errorf("marked %d truncated files, want %d", n, files)
+	}
+	if limit := maxDiffBytes + files*len(fileTruncatedMarker); len(got) > limit {
+		t.Errorf("capDiff returned %d bytes, want at most %d", len(got), limit)
+	}
+	if !strings.HasSuffix(got, "\n") {
+		t.Error("capDiff cut mid-line")
+	}
+	last := -1
+	for i := range files {
+		idx := strings.Index(got, fmt.Sprintf("+++ b/f%d.txt", i))
+		if idx < 0 {
+			t.Fatalf("file %d header missing", i)
+		}
+		if idx < last {
+			t.Errorf("file %d out of order", i)
+		}
+		last = idx
+		if !strings.Contains(got, fmt.Sprintf("+change 0 in file %d", i)) {
+			t.Errorf("file %d lost its first body line", i)
+		}
+	}
+}
+
+func TestCapDiffEqualSharesLetShortFilesGiveBack(t *testing.T) {
+	const body = 300
+	small := "diff --git a/small.txt b/small.txt\n--- a/small.txt\n+++ b/small.txt\n@@ -1 +1 @@\n+tiny\n"
+	var b strings.Builder
+	b.WriteString(small)
+	for _, name := range []string{"big1.txt", "big2.txt"} {
+		fmt.Fprintf(&b, "diff --git a/%s b/%s\n--- a/%s\n+++ b/%s\n@@ -1,%d +1,%d @@\n", name, name, name, name, body, body)
+		for j := range body {
+			fmt.Fprintf(&b, "+%s line %d with padding padding padding\n", name, j)
+		}
+	}
+
+	got := capDiff(b.String())
+	if !strings.Contains(got, small) {
+		t.Error("small file was cut or marked truncated")
+	}
+	if n := strings.Count(got, fileTruncatedMarker); n != 2 {
+		t.Errorf("marked %d files truncated, want 2", n)
+	}
+}
+
+func TestAllocateDiffGivesBackUnusedShare(t *testing.T) {
+	bodies := []string{strings.Repeat("x", 10), strings.Repeat("x", 1000), strings.Repeat("x", 1000)}
+	got := allocateDiff(len(bodies), bodies, 900)
+	want := []int{10, 445, 445}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("allocateDiff = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestCapDiffFallsBackWhenHeadersDoNotFit(t *testing.T) {
+	out := fakeDiff(300, 1)
+	got := capDiff(out)
+	if len(got) > maxDiffBytes+len(diffTruncatedMarker) {
+		t.Errorf("capDiff returned %d bytes, want at most %d", len(got), maxDiffBytes+len(diffTruncatedMarker))
+	}
+	if !strings.Contains(got, diffTruncatedMarker) {
+		t.Error("fallback output is missing the truncation marker")
+	}
+}
+
+func TestCapDiffKeepsSmallDiff(t *testing.T) {
+	out := fakeDiff(2, 3)
+	if got := capDiff(out); got != out {
+		t.Errorf("capDiff changed a diff under the cap:\n got: %q\nwant: %q", got, out)
+	}
+}
 
 func TestStagedDiffFromSubdirectory(t *testing.T) {
 	dir := t.TempDir()

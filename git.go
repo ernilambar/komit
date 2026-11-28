@@ -13,6 +13,8 @@ import (
 const (
 	maxDiffBytes        = 4 * 1024
 	diffTruncatedMarker = "\n[diff truncated]\n"
+	// fileTruncatedMarker follows a file section whose hunks were cut short.
+	fileTruncatedMarker = "\n[file diff truncated]\n"
 )
 
 // diffPathspecs cover the whole repo even when komit runs from a subdirectory.
@@ -97,10 +99,144 @@ func stagedDiff() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached: %w", err)
 	}
+	return capDiff(out), nil
+}
+
+// capDiff keeps out within maxDiffBytes while giving every file its header and
+// an equal share of hunk content, so a large early file cannot hide the files
+// after it. When even the headers do not fit, out is cut as before.
+func capDiff(out string) string {
 	if len(out) <= maxDiffBytes {
+		return out
+	}
+
+	preamble, sections := splitDiffSections(out)
+	headers := make([]string, len(sections))
+	bodies := make([]string, len(sections))
+	fixed := len(preamble)
+	for i, section := range sections {
+		headers[i], bodies[i] = splitDiffSection(section)
+		fixed += len(headers[i])
+	}
+	if len(sections) == 0 || fixed >= maxDiffBytes {
+		return truncateUTF8(out, maxDiffBytes) + diffTruncatedMarker
+	}
+
+	quota := allocateDiff(len(sections), bodies, maxDiffBytes-fixed)
+
+	var b strings.Builder
+	b.Grow(maxDiffBytes + len(fileTruncatedMarker)*len(sections))
+	b.WriteString(preamble)
+	for i := range sections {
+		b.WriteString(headers[i])
+		if len(bodies[i]) > quota[i] {
+			b.WriteString(cutLines(bodies[i], quota[i]))
+			b.WriteString(fileTruncatedMarker)
+			continue
+		}
+		b.WriteString(bodies[i])
+	}
+	return b.String()
+}
+
+// splitDiffSections splits diff output into the text before the first file and
+// one section per file, each starting at its "diff --git" line.
+func splitDiffSections(out string) (preamble string, sections []string) {
+	var starts []int
+	for off := 0; off < len(out); {
+		end := strings.IndexByte(out[off:], '\n')
+		if end < 0 {
+			end = len(out)
+		} else {
+			end += off + 1
+		}
+		if strings.HasPrefix(out[off:], "diff --git ") {
+			starts = append(starts, off)
+		}
+		off = end
+	}
+	if len(starts) == 0 {
 		return out, nil
 	}
-	return truncateUTF8(out, maxDiffBytes) + diffTruncatedMarker, nil
+	preamble = out[:starts[0]]
+	for i, start := range starts {
+		end := len(out)
+		if i+1 < len(starts) {
+			end = starts[i+1]
+		}
+		sections = append(sections, out[start:end])
+	}
+	return preamble, sections
+}
+
+// splitDiffSection splits a file section into its header and its hunks. Binary
+// payloads count as body so they can be cut.
+func splitDiffSection(section string) (header, body string) {
+	for off := 0; off < len(section); {
+		end := strings.IndexByte(section[off:], '\n')
+		var line string
+		if end < 0 {
+			line = section[off:]
+		} else {
+			line = section[off : off+end+1]
+		}
+		if strings.HasPrefix(line, "@@") || strings.HasPrefix(line, "GIT binary patch") {
+			return section[:off], section[off:]
+		}
+		if end < 0 {
+			break
+		}
+		off += end + 1
+	}
+	return section, ""
+}
+
+// allocateDiff shares budget bytes between bodies, splitting it evenly and
+// handing what shorter files leave unused to the longer ones.
+func allocateDiff(n int, bodies []string, budget int) []int {
+	quota := make([]int, n)
+	active := make([]int, 0, n)
+	for i := range bodies {
+		active = append(active, i)
+	}
+	for len(active) > 0 {
+		share := budget / len(active)
+		if share == 0 {
+			break
+		}
+		next := active[:0]
+		for _, i := range active {
+			if len(bodies[i]) <= share {
+				quota[i] = len(bodies[i])
+				budget -= len(bodies[i])
+				continue
+			}
+			next = append(next, i)
+		}
+		if len(next) == len(active) {
+			for _, i := range next {
+				quota[i] = share
+			}
+			break
+		}
+		active = next
+	}
+	return quota
+}
+
+// cutLines returns the longest prefix of s ending on a line boundary that is at
+// most limit bytes long.
+func cutLines(s string, limit int) string {
+	if limit >= len(s) {
+		return s
+	}
+	if limit <= 0 {
+		return ""
+	}
+	if i := strings.LastIndexByte(s[:limit], '\n'); i >= 0 {
+		return s[:i+1]
+	}
+	return ""
 }
 
 // buildModelInput assembles the staged stat and the filtered, size-capped diff
