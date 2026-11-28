@@ -62,7 +62,7 @@ func systemPrompt(n int) string {
 	return fmt.Sprintf(`You write Git commit subjects for a staged diff.
 
 Rules:
-- Plain imperative mood, e.g. "Add endpoint validation", "Fix nil pointer in parser".
+- Plain imperative mood: start with a verb, in 3 to 10 words.
 - Single line, at most %d characters.
 - No Conventional Commit prefixes (no "feat:", "fix:", etc.).
 - No trailing period, no body, no trailers.

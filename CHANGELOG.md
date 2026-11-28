@@ -1,5 +1,8 @@
 # Changelog
 
+## X.X.X - YYYY-MM-DD
+- Changed: Describe the subject style without example wording the model copied into subjects
+
 ## 0.1.2 - 2026-11-28
 - Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies
 - Added: Suggest KOMIT_REASONING_EFFORT=none when the reply hits the token limit
