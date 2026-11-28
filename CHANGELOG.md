@@ -1,5 +1,9 @@
 # Changelog
 
+## X.X.X - YYYY-MM-DD
+- Changed: Send at most 4 KB of diff to the model by default
+- Changed: Ask the model for a short, deterministic reply and regenerate only when requested
+
 ## 0.1.1 - 2026-11-27
 - Added: Press e to edit a suggestion and r to regenerate
 - Added: Show a spinner while generating subjects

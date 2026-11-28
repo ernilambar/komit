@@ -81,7 +81,7 @@ Server and model problems are warnings; missing required config or a failed gene
 ## What gets sent
 
 - `git diff --cached --stat`, always in full.
-- The staged diff, capped at 12 KB. Changes to `*.lock`, `package-lock.json`, `go.sum` and `*.min.*` files are left out.
+- The staged diff, capped at 4 KB. Changes to `*.lock`, `package-lock.json`, `go.sum` and `*.min.*` files are left out.
 
 ## Exit codes
 

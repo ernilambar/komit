@@ -18,6 +18,9 @@ import (
 const (
 	requestTimeout = 60 * time.Second
 	maxErrorBody   = 200
+	// maxResponseTokens bounds the reply; five 72-character subjects need far
+	// less, and a model that rambles should not hold up the commit.
+	maxResponseTokens = 200
 )
 
 type chatMessage struct {
@@ -26,8 +29,10 @@ type chatMessage struct {
 }
 
 type chatRequest struct {
-	Model    string        `json:"model"`
-	Messages []chatMessage `json:"messages"`
+	Model       string        `json:"model"`
+	Messages    []chatMessage `json:"messages"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
+	Temperature *float64      `json:"temperature,omitempty"`
 }
 
 // sessionID identifies this run to OpenCode, whose Go endpoint rejects
@@ -63,14 +68,18 @@ Return exactly %d subjects, one per line, nothing else.`, maxSubjectLen, n)
 }
 
 // generateSubjects asks the model for n commit subjects and returns its raw
-// reply for cleanup.
+// reply for cleanup. Output is capped and sampling made deterministic, so the
+// reply is short and stable for the same diff.
 func generateSubjects(cfg config, input string, n int) (string, error) {
+	temperature := 0.0
 	return chatCompletion(cfg, chatRequest{
 		Model: cfg.Model,
 		Messages: []chatMessage{
 			{Role: "system", Content: systemPrompt(n)},
 			{Role: "user", Content: input},
 		},
+		MaxTokens:   maxResponseTokens,
+		Temperature: &temperature,
 	}, requestTimeout)
 }
 
@@ -147,22 +156,22 @@ func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (str
 
 var errNoSubjects = errors.New("model returned no valid subjects")
 
-// suggestSubjects generates and cleans up to n subjects, regenerating once if
-// every candidate is rejected.
+// suggestSubjects generates and cleans up to n subjects. A reply with no
+// valid subject is reported as errNoSubjects; regenerating is left to the
+// user rather than costing a second hidden request.
 func suggestSubjects(cfg config, input string, n int) ([]string, error) {
-	for attempt := 0; attempt < 2; attempt++ {
-		raw, err := generateSubjects(cfg, input, n)
-		if err != nil {
-			return nil, err
-		}
-		if subjects := cleanSubjects(raw); len(subjects) > 0 {
-			if len(subjects) > n {
-				subjects = subjects[:n]
-			}
-			return subjects, nil
-		}
+	raw, err := generateSubjects(cfg, input, n)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errNoSubjects
+	subjects := cleanSubjects(raw)
+	if len(subjects) == 0 {
+		return nil, errNoSubjects
+	}
+	if len(subjects) > n {
+		subjects = subjects[:n]
+	}
+	return subjects, nil
 }
 
 func describeRequestError(err error, baseURL string, timeout time.Duration) error {
