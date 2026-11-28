@@ -1,8 +1,9 @@
 # Changelog
 
-## X.X.X - YYYY-MM-DD
+## 0.1.2 - 2026-11-28
 - Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies
-- Changed: Send at most 4 KB of diff to the model by default
+- Added: Suggest KOMIT_REASONING_EFFORT=none when the reply hits the token limit
+- Changed: Send at most 4 KB of the staged diff to the model
 - Changed: Ask the model for a short, deterministic reply and regenerate only when requested
 
 ## 0.1.1 - 2026-11-27

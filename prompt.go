@@ -32,7 +32,7 @@ func chooseSubject(cfg config, input string, n int) (string, error) {
 	}
 	var notice string
 	if writeOwn {
-		notice = capitalize(errNoSubjects.Error())
+		notice = capitalize(err.Error())
 	}
 
 	for {

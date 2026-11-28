@@ -21,7 +21,7 @@ Prebuilt binaries and installing from source: [docs/install.md](docs/install.md)
 | `KOMIT_BASE_URL` | Yes | OpenAI-compatible API base URL, e.g. `http://127.0.0.1:11434/v1` |
 | `KOMIT_MODEL` | Yes, unless `--model` is passed | Model name |
 | `KOMIT_API_KEY` | No | Sent as `Authorization: Bearer` when set |
-| `KOMIT_REASONING_EFFORT` | No | Sent as `reasoning_effort` when set; use `none` to skip thinking on reasoning models |
+| `KOMIT_REASONING_EFFORT` | No | Sent as `reasoning_effort` when set; use `none` for reasoning models, which can otherwise spend the reply's token limit on thinking |
 
 komit exits with an error if a required variable is missing.
 

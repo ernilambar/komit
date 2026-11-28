@@ -29,7 +29,7 @@ func runStatus(args []string) int {
 	checkModels(cfg)
 
 	start := time.Now()
-	_, err := chatCompletion(cfg, chatRequest{
+	_, _, err := chatCompletion(cfg, chatRequest{
 		Model:           cfg.Model,
 		Messages:        []chatMessage{{Role: "user", Content: "Reply with OK"}},
 		ReasoningEffort: cfg.ReasoningEffort,

@@ -53,7 +53,8 @@ func newSessionID() string {
 
 type chatResponse struct {
 	Choices []struct {
-		Message chatMessage `json:"message"`
+		Message      chatMessage `json:"message"`
+		FinishReason string      `json:"finish_reason"`
 	} `json:"choices"`
 }
 
@@ -71,8 +72,9 @@ Return exactly %d subjects, one per line, nothing else.`, maxSubjectLen, n)
 
 // generateSubjects asks the model for n commit subjects and returns its raw
 // reply for cleanup. Output is capped and sampling made deterministic, so the
-// reply is short and stable for the same diff.
-func generateSubjects(cfg config, input string, n int) (string, error) {
+// reply is short and stable for the same diff. It also returns the finish
+// reason, which is "length" when the reply hit maxResponseTokens.
+func generateSubjects(cfg config, input string, n int) (string, string, error) {
 	temperature := 0.0
 	return chatCompletion(cfg, chatRequest{
 		Model: cfg.Model,
@@ -140,35 +142,44 @@ func apiRequest(cfg config, method, path string, payload any, timeout time.Durat
 	return data, nil
 }
 
-// chatCompletion posts to /chat/completions and returns the first choice.
-func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (string, error) {
+// chatCompletion posts to /chat/completions and returns the first choice's
+// content and finish reason.
+func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (string, string, error) {
 	data, err := apiRequest(cfg, http.MethodPost, "/chat/completions", request, timeout)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	var parsed chatResponse
 	if err := json.Unmarshal(data, &parsed); err != nil {
-		return "", fmt.Errorf("invalid response from server: %w", err)
+		return "", "", fmt.Errorf("invalid response from server: %w", err)
 	}
 	if len(parsed.Choices) == 0 {
-		return "", errors.New("server returned no choices")
+		return "", "", errors.New("server returned no choices")
 	}
-	return parsed.Choices[0].Message.Content, nil
+	choice := parsed.Choices[0]
+	return choice.Message.Content, choice.FinishReason, nil
 }
 
 var errNoSubjects = errors.New("model returned no valid subjects")
+
+// errTokenLimit is errNoSubjects caused by the reply hitting the token limit,
+// typically a reasoning model spending it on thinking.
+var errTokenLimit = fmt.Errorf("%w: reply hit the token limit; set KOMIT_REASONING_EFFORT=none", errNoSubjects)
 
 // suggestSubjects generates and cleans up to n subjects. A reply with no
 // valid subject is reported as errNoSubjects; regenerating is left to the
 // user rather than costing a second hidden request.
 func suggestSubjects(cfg config, input string, n int) ([]string, error) {
-	raw, err := generateSubjects(cfg, input, n)
+	raw, finishReason, err := generateSubjects(cfg, input, n)
 	if err != nil {
 		return nil, err
 	}
 	subjects := cleanSubjects(raw)
 	if len(subjects) == 0 {
+		if finishReason == "length" {
+			return nil, errTokenLimit
+		}
 		return nil, errNoSubjects
 	}
 	if len(subjects) > n {
