@@ -43,7 +43,7 @@ The menu offers the generated subjects, `↻ Regenerate`, and `✎ Write my own`
 | `-a`, `--all` | Stage all changes first, including untracked files (`git add -A`) |
 | `-y`, `--yes` | Commit the first suggestion without prompting |
 | `-n`, `--count <n>` | Number of candidates, 1–5 (default 2). Cannot be combined with `-y` unless `-n 1` |
-| `--dry-run` | Print the candidates and exit without committing |
+| `--dry-run` | Print the candidates and exit without committing. With `-a`, changes stay staged |
 | `--no-push` | Commit without pushing |
 | `--model <name>` | Override `KOMIT_MODEL` |
 | `-V`, `--version` | Print version and exit |
@@ -71,6 +71,7 @@ $ komit status
 Base URL   http://127.0.0.1:11434/v1
 Model      gemma3:4b
 API key    not set
+Reasoning  not set
 
 ✓ Server reachable        42ms
 ✓ Model available

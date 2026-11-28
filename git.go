@@ -37,6 +37,7 @@ var diffPathspecs = []string{
 var (
 	errNotRepo       = errors.New("not a git repository")
 	errNothingStaged = errors.New("nothing staged — stage changes or pass -a")
+	errDetached      = errors.New("detached HEAD — check out a branch or pass --no-push")
 )
 
 // gitOutput runs a git command and returns its stdout. stderr is included in
@@ -115,7 +116,8 @@ func capFiles(out string) string {
 
 func stagedDiff() (string, error) {
 	// One context line leaves more of the budget for the changes themselves.
-	args := append([]string{"diff", "--cached", "--no-ext-diff", "-U1", "--"}, diffPathspecs...)
+	// --no-color: color.ui=always would hide the "diff --git" lines capDiff splits on.
+	args := append([]string{"diff", "--cached", "--no-ext-diff", "--no-color", "-U1", "--"}, diffPathspecs...)
 	out, err := gitOutput(args...)
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached: %w", err)
@@ -299,16 +301,44 @@ func commit(subject string) error {
 	return nil
 }
 
+// currentBranch returns the checked-out branch, or errDetached.
+func currentBranch() (string, error) {
+	out, err := gitOutput("symbolic-ref", "--quiet", "--short", "HEAD")
+	if err != nil {
+		return "", errDetached
+	}
+	return strings.TrimSpace(out), nil
+}
+
 // push pushes the current branch, setting origin as upstream when none exists.
 func push() error {
+	branch, err := currentBranch()
+	if err != nil {
+		return fmt.Errorf("%w (commit kept)", err)
+	}
 	args := []string{"push"}
 	if _, err := gitOutput("rev-parse", "--abbrev-ref", "@{u}"); err != nil {
 		args = []string{"push", "-u", "origin", "HEAD"}
+	} else if upstreamRenamed(branch) {
+		// push.default=simple refuses an upstream with another name.
+		args = []string{"-c", "push.default=upstream", "push"}
 	}
 	if err := gitStream(args...); err != nil {
 		return fmt.Errorf("git %s failed (commit kept): %w", strings.Join(args, " "), err)
 	}
 	return nil
+}
+
+// upstreamRenamed reports whether branch tracks a differently named branch
+// while push.default is unset or simple, which makes a plain push fail.
+func upstreamRenamed(branch string) bool {
+	merge, err := gitOutput("config", "--get", "branch."+branch+".merge")
+	if err != nil || strings.TrimSpace(merge) == "refs/heads/"+branch {
+		return false
+	}
+	mode, _ := gitOutput("config", "--get", "push.default")
+	mode = strings.TrimSpace(mode)
+	return mode == "" || mode == "simple"
 }
 
 // truncateUTF8 cuts s to at most max bytes without splitting a rune.

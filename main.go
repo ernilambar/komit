@@ -37,6 +37,8 @@ func run() int {
 		return runStatus(os.Args[2:])
 	}
 
+	// ContinueOnError keeps pflag from exiting 2, outside the exit-code contract.
+	pflag.CommandLine.Init(os.Args[0], pflag.ContinueOnError)
 	var opts options
 	pflag.BoolVar(&opts.dryRun, "dry-run", false, "print subjects without committing")
 	pflag.BoolVar(&opts.noPush, "no-push", false, "commit without pushing")
@@ -46,7 +48,10 @@ func run() int {
 	pflag.IntVarP(&opts.count, "count", "n", 2, "number of subject candidates (1-5)")
 	showVersion := pflag.BoolP("version", "V", false, "print version and exit")
 	showHelp := pflag.BoolP("help", "h", false, "print help and exit")
-	pflag.Parse()
+	if err := pflag.CommandLine.Parse(os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, "komit:", err)
+		return 1
+	}
 
 	if *showHelp {
 		pflag.CommandLine.SetOutput(os.Stdout)
@@ -86,6 +91,12 @@ func run() int {
 	if err := ensureRepo(); err != nil {
 		fmt.Fprintln(os.Stderr, "komit:", err)
 		return 1
+	}
+	if !opts.dryRun && !opts.noPush {
+		if _, err := currentBranch(); err != nil {
+			fmt.Fprintln(os.Stderr, "komit:", err)
+			return 1
+		}
 	}
 	if opts.all {
 		if err := stageAll(); err != nil {

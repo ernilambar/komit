@@ -2,6 +2,7 @@
 
 ## X.X.X - YYYY-MM-DD
 - Fixed: Reasoning models hitting the token limit when KOMIT_REASONING_EFFORT is unset
+- Fixed: Push failing on a detached HEAD or an upstream with a different name
 
 ## 0.1.3 - 2026-11-28
 - Changed: Split the 4 KB diff budget evenly across staged files so every file keeps its header

@@ -35,6 +35,8 @@ type chatRequest struct {
 	Temperature *float64      `json:"temperature,omitempty"`
 	// ReasoningEffort is omitted when empty, since some servers reject it.
 	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	// MaxCompletionTokens replaces MaxTokens for servers that reject it.
+	MaxCompletionTokens int `json:"max_completion_tokens,omitempty"`
 }
 
 // sessionID identifies this run to OpenCode, whose Go endpoint rejects
@@ -160,6 +162,14 @@ func apiRequest(cfg config, method, path string, payload any, timeout time.Durat
 // content and finish reason.
 func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (string, string, error) {
 	data, err := apiRequest(cfg, http.MethodPost, "/chat/completions", request, timeout)
+	for {
+		fixed, ok := compatRequest(request, err)
+		if !ok {
+			break
+		}
+		request = fixed
+		data, err = apiRequest(cfg, http.MethodPost, "/chat/completions", request, timeout)
+	}
 	if err != nil {
 		return "", "", err
 	}
@@ -173,6 +183,25 @@ func chatCompletion(cfg config, request chatRequest, timeout time.Duration) (str
 	}
 	choice := parsed.Choices[0]
 	return choice.Message.Content, choice.FinishReason, nil
+}
+
+// compatRequest drops a parameter the server rejected with 400, as OpenAI
+// reasoning models do with max_tokens and a non-default temperature. Each
+// rewrite removes a field, so retrying terminates.
+func compatRequest(request chatRequest, err error) (chatRequest, bool) {
+	var statusErr *httpStatusError
+	if !errors.As(err, &statusErr) || statusErr.Code != http.StatusBadRequest {
+		return request, false
+	}
+	switch {
+	case request.MaxTokens > 0 && strings.Contains(statusErr.Body, "max_tokens"):
+		request.MaxCompletionTokens, request.MaxTokens = request.MaxTokens, 0
+	case request.Temperature != nil && strings.Contains(statusErr.Body, "temperature"):
+		request.Temperature = nil
+	default:
+		return request, false
+	}
+	return request, true
 }
 
 var errNoSubjects = errors.New("model returned no valid subjects")

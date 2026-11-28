@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -177,4 +178,64 @@ func TestStagedDiffFromSubdirectory(t *testing.T) {
 	if strings.Contains(diff, "deps.lock") {
 		t.Error("diff includes excluded deps.lock")
 	}
+}
+
+func TestPush(t *testing.T) {
+	setup := func(t *testing.T) (run func(args ...string) string) {
+		// A global push.default or signing setting would change what push does.
+		t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+		dir := t.TempDir()
+		run = func(args ...string) string {
+			t.Helper()
+			cmd := exec.Command("git", args...)
+			cmd.Dir = filepath.Join(dir, "work")
+			if args[0] == "init" {
+				cmd.Dir = dir
+			}
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("git %v: %v\n%s", args, err, out)
+			}
+			return strings.TrimSpace(string(out))
+		}
+		run("init", "-q", "--bare", "remote.git")
+		run("init", "-q", "-b", "main", "work")
+		run("config", "user.name", "t")
+		run("config", "user.email", "t@example.com")
+		run("remote", "add", "origin", filepath.Join(dir, "remote.git"))
+		run("commit", "-q", "--allow-empty", "-m", "Init")
+		t.Chdir(filepath.Join(dir, "work"))
+		return run
+	}
+
+	t.Run("no upstream", func(t *testing.T) {
+		run := setup(t)
+		if err := push(); err != nil {
+			t.Fatal(err)
+		}
+		if got := run("rev-parse", "--abbrev-ref", "@{u}"); got != "origin/main" {
+			t.Errorf("upstream = %q", got)
+		}
+	})
+
+	t.Run("renamed upstream", func(t *testing.T) {
+		run := setup(t)
+		run("push", "-q", "-u", "origin", "main")
+		run("checkout", "-q", "-b", "trunk", "--track", "origin/main")
+		run("commit", "-q", "--allow-empty", "-m", "Next")
+		if err := push(); err != nil {
+			t.Fatal(err)
+		}
+		if run("rev-parse", "origin/main") != run("rev-parse", "HEAD") {
+			t.Error("origin/main was not updated")
+		}
+	})
+
+	t.Run("detached", func(t *testing.T) {
+		run := setup(t)
+		run("checkout", "-q", "--detach")
+		if err := push(); !errors.Is(err, errDetached) {
+			t.Fatalf("err = %v, want errDetached", err)
+		}
+	})
 }
