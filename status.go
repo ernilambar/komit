@@ -18,6 +18,7 @@ func runStatus(args []string) int {
 	fmt.Printf("Base URL   %s\n", orNotSet(cfg.BaseURL))
 	fmt.Printf("Model      %s\n", orNotSet(cfg.Model))
 	fmt.Printf("API key    %s\n", describeKey(cfg.APIKey))
+	fmt.Printf("Reasoning  %s\n", orNotSet(cfg.ReasoningEffort))
 	fmt.Println()
 
 	if err := cfg.validate(); err != nil {
@@ -29,8 +30,9 @@ func runStatus(args []string) int {
 
 	start := time.Now()
 	_, err := chatCompletion(cfg, chatRequest{
-		Model:    cfg.Model,
-		Messages: []chatMessage{{Role: "user", Content: "Reply with OK"}},
+		Model:           cfg.Model,
+		Messages:        []chatMessage{{Role: "user", Content: "Reply with OK"}},
+		ReasoningEffort: cfg.ReasoningEffort,
 	}, requestTimeout)
 	if err != nil {
 		printCheck("✗", "Generation failed", err.Error())

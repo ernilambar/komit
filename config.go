@@ -10,13 +10,17 @@ type config struct {
 	BaseURL string
 	Model   string
 	APIKey  string
+	// ReasoningEffort is sent as reasoning_effort when set, e.g. "none" to
+	// skip thinking on reasoning models.
+	ReasoningEffort string
 }
 
 func loadConfig() config {
 	return config{
-		BaseURL: strings.TrimRight(os.Getenv("KOMIT_BASE_URL"), "/"),
-		Model:   os.Getenv("KOMIT_MODEL"),
-		APIKey:  os.Getenv("KOMIT_API_KEY"),
+		BaseURL:         strings.TrimRight(os.Getenv("KOMIT_BASE_URL"), "/"),
+		Model:           os.Getenv("KOMIT_MODEL"),
+		APIKey:          os.Getenv("KOMIT_API_KEY"),
+		ReasoningEffort: os.Getenv("KOMIT_REASONING_EFFORT"),
 	}
 }
 

@@ -33,6 +33,8 @@ type chatRequest struct {
 	Messages    []chatMessage `json:"messages"`
 	MaxTokens   int           `json:"max_tokens,omitempty"`
 	Temperature *float64      `json:"temperature,omitempty"`
+	// ReasoningEffort is omitted when empty, since some servers reject it.
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 // sessionID identifies this run to OpenCode, whose Go endpoint rejects
@@ -78,8 +80,9 @@ func generateSubjects(cfg config, input string, n int) (string, error) {
 			{Role: "system", Content: systemPrompt(n)},
 			{Role: "user", Content: input},
 		},
-		MaxTokens:   maxResponseTokens,
-		Temperature: &temperature,
+		MaxTokens:       maxResponseTokens,
+		Temperature:     &temperature,
+		ReasoningEffort: cfg.ReasoningEffort,
 	}, requestTimeout)
 }
 

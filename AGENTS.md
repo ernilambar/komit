@@ -19,6 +19,7 @@ go mod download
 export KOMIT_BASE_URL=http://127.0.0.1:11434/v1
 export KOMIT_MODEL=gemma3:4b
 export KOMIT_API_KEY=            # optional; sent as Authorization: Bearer
+export KOMIT_REASONING_EFFORT=   # optional; sent as reasoning_effort, e.g. none
 ```
 
 `scripts/dev.sh` also loads `KOMIT_*` variables from a gitignored `.env` file. No build

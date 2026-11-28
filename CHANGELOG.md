@@ -1,6 +1,7 @@
 # Changelog
 
 ## X.X.X - YYYY-MM-DD
+- Added: KOMIT_REASONING_EFFORT to set the model's reasoning effort, e.g. none for faster replies
 - Changed: Send at most 4 KB of diff to the model by default
 - Changed: Ask the model for a short, deterministic reply and regenerate only when requested
 
