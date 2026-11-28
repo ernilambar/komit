@@ -68,6 +68,16 @@ Reasoning  not set
 
 Server and model problems are warnings; missing required config or a failed generation check exits 1.
 
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Error: unsupported platform, invalid flags, missing config, nothing staged, server unreachable, commit or push failed |
+| `130` | Cancelled in the interactive prompt |
+
+If the push fails, the commit is kept.
+
 ## What gets sent
 
 - `git diff --cached --name-status`, capped at 50 files with a count of the rest.

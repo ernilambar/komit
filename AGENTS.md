@@ -57,7 +57,7 @@ static analysis.
 - **Target macOS 15+ on Apple Silicon.** Keep the guard at the top of `run()`, and keep
   `GOARCH=arm64` with `-macos 15.0` in release builds.
 - **Exit codes are a contract.** Return `int` from `run()` and use exit codes `0` success,
-  `1` error, `130` cancelled (see README). Never call `os.Exit` outside `main`. A failed
+  `1` error, `130` cancelled (see `docs/usage.md`). Never call `os.Exit` outside `main`. A failed
   push must keep the commit.
 - **Changelog.** `CHANGELOG.md` is maintained with
   [`@nilambar/flatlog`](https://github.com/ernilambar/flatlog). Record user-facing changes
