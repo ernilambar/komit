@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxDiffBytes        = 12 * 1024
+	maxDiffBytes        = 4 * 1024
 	diffTruncatedMarker = "\n[diff truncated]\n"
 )
 
